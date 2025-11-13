@@ -1,20 +1,27 @@
 package com.ori.afinal.model;
 
 public class Status {
-
+    String UserId;
     Boolean invited;
     Boolean accepted;
-    Boolean  declined;
-    Boolean maybe;
+    Boolean declined;
 
-    public Status(Boolean invited, Boolean accepted, Boolean declined, Boolean maybe) {
+    public Status(String userId, Boolean invited, Boolean accepted, Boolean declined) {
+        UserId = userId;
         this.invited = invited;
         this.accepted = accepted;
         this.declined = declined;
-        this.maybe = maybe;
     }
 
     public Status() {
+    }
+
+    public String getUserId() {
+        return UserId;
+    }
+
+    public void setUserId(String userId) {
+        UserId = userId;
     }
 
     public Boolean getInvited() {
@@ -41,21 +48,16 @@ public class Status {
         this.declined = declined;
     }
 
-    public Boolean getMaybe() {
-        return maybe;
-    }
-
-    public void setMaybe(Boolean maybe) {
-        this.maybe = maybe;
-    }
-
     @Override
     public String toString() {
         return "Status{" +
-                "invited=" + invited +
+                "UserId='" + UserId + '\'' +
+                ", invited=" + invited +
                 ", accepted=" + accepted +
                 ", declined=" + declined +
-                ", maybe=" + maybe +
                 '}';
     }
 }
+
+
+

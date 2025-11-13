@@ -2,12 +2,12 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F4F6F9"
     android:padding="24dp"
     tools:context=".MainActivity">
-
 
     <TextView
         android:id="@+id/appTitle"
@@ -22,7 +22,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="80dp" />
 
-
     <Button
         android:id="@+id/btnRegister"
         android:layout_width="0dp"
@@ -30,11 +29,11 @@
         android:text="הרשמה"
         android:textSize="18sp"
         android:textColor="#FFFFFF"
+        android:onClick="GO"
         app:layout_constraintTop_toBottomOf="@id/appTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="60dp" />
-
 
     <Button
         android:id="@+id/btnLogin"
@@ -47,7 +46,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="20dp" />
-
 
     <Button
         android:id="@+id/btnAbout"
