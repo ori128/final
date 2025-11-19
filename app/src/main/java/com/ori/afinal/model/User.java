@@ -7,6 +7,25 @@ public class User {
     String phone;
     String email;
     String password;
+    Boolean isAdmin;
+
+    public Boolean getAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(Boolean admin) {
+        isAdmin = admin;
+    }
+
+    public User(String id, String fname, String lname, String phone, String email, String password, Boolean isAdmin) {
+        this.id = id;
+        this.fname = fname;
+        this.lname = lname;
+        this.phone = phone;
+        this.email = email;
+        this.password = password;
+        this.isAdmin = isAdmin;
+    }
 
     public User(String id, String fname, String lname, String phone, String email, String password) {
         this.id = id;

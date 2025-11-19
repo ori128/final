@@ -5,13 +5,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
-    android:background="#F8F8F8"
-    android:layoutDirection="rtl"
-    android:textDirection="rtl"
-    tools:context=".RegisterActivity">
+    tools:context=".RegisterUser">
 
-    <!-- כותרת -->
     <TextView
         android:id="@+id/tv_register_title"
         android:layout_width="wrap_content"
