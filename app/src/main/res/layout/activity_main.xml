@@ -29,7 +29,6 @@
         android:text="הרשמה"
         android:textSize="18sp"
         android:textColor="#FFFFFF"
-        android:onClick="GO"
         app:layout_constraintTop_toBottomOf="@id/appTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

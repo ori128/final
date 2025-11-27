@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "821919392321",
+    "firebase_url": "https://final-ca822-default-rtdb.firebaseio.com",
+    "project_id": "final-ca822",
+    "storage_bucket": "final-ca822.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:821919392321:android:e8e26868e498da7c9adcc0",
+        "android_client_info": {
+          "package_name": "com.ori.afinal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr_XlgdBvaY54yqDV0Hcn3HDZUBdRWXVo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
