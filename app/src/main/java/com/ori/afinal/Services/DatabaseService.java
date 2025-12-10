@@ -5,8 +5,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.ori.afinal.model.Event;
-import com.ori.afinal.model.Status;
 import com.ori.afinal.model.User;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

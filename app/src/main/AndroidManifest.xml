@@ -12,6 +12,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Final">
         <activity
+            android:name=".AddEvent"
+            android:exported="false" />
+        <activity
+            android:name=".MainAdmin"
+            android:exported="false" />
+        <activity
+            android:name=".AdminMain"
+            android:exported="false" />
+        <activity
             android:name=".HomePage"
             android:exported="false" />
         <activity

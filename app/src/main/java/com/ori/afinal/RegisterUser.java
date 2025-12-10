@@ -1,6 +1,8 @@
 package com.ori.afinal;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,7 +28,10 @@ public class RegisterUser extends AppCompatActivity implements View.OnClickListe
     Button btnSubmit;
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
+    public static final String MyPREFERENCES = "MyPrefs" ;
 
+
+    SharedPreferences sharedpreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +42,11 @@ public class RegisterUser extends AppCompatActivity implements View.OnClickListe
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
+
         });
+
+
+        sharedpreferences=getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
 
         databaseService=DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
@@ -119,6 +128,14 @@ public class RegisterUser extends AppCompatActivity implements View.OnClickListe
 
                 Log.d(TAG, "createUserInDatabase: Redirecting to MainActivity");
                 /// Redirect to MainActivity and clear back stack to prevent user from going back to register screen
+
+                SharedPreferences.Editor editor = sharedpreferences.edit();
+
+                editor.putString("email", email);
+                editor.putString("password", password);
+
+                editor.commit();
+
                 Intent intent = new Intent(RegisterUser.this, MainActivity.class);
                 /// clear the back stack (clear history) and start the MainActivity
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

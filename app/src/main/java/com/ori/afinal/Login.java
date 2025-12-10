@@ -1,6 +1,8 @@
 package com.ori.afinal;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -29,6 +31,11 @@ public class Login extends AppCompatActivity implements View.OnClickListener {
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
 
+    public static final String MyPREFERENCES = "MyPrefs" ;
+
+
+    SharedPreferences sharedpreferences;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,9 +49,7 @@ public class Login extends AppCompatActivity implements View.OnClickListener {
             return insets;
         });
 
-        // Initialize Firebase + Database
-        databaseService = DatabaseService.getInstance();
-        mAuth = FirebaseAuth.getInstance();
+
 
         // Find views
         etEmail = findViewById(R.id.etEmail);
@@ -52,6 +57,21 @@ public class Login extends AppCompatActivity implements View.OnClickListener {
         btnLogin = findViewById(R.id.btnLogin);
         tvRegister = findViewById(R.id.noAccount);
         btnBackMain = findViewById(R.id.btnBackMain);
+
+
+
+        sharedpreferences=getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
+
+
+         String email2=sharedpreferences.getString("email","");
+         String pass2=sharedpreferences.getString("password","");
+        etEmail.setText(email2);
+        etPassword.setText(pass2);
+
+        // Initialize Firebase + Database
+        databaseService = DatabaseService.getInstance();
+        mAuth = FirebaseAuth.getInstance();
+
 
         // Set listeners
         btnLogin.setOnClickListener(this);
