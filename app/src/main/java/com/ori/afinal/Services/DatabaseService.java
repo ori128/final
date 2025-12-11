@@ -5,6 +5,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.ori.afinal.model.Event;
 import com.ori.afinal.model.User;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -34,7 +36,7 @@ public class DatabaseService {
     /// paths for different data types in the database
     /// @see DatabaseService#readData(String)
     private static final String USERS_PATH = "users",
-                                FOODS_PATH = "foods",
+                                EVENTS_PATH = "events",
                                 CARTS_PATH = "carts";
 
     /// callback interface for database operations
@@ -214,24 +216,71 @@ public class DatabaseService {
 
     // region User Section
 
-    /// generate a new id for a new user in the database
-    /// @return a new id for the user
-    /// @see #generateNewId(String)
-    /// @see User
-    public String generateUserId() {
-        return generateNewId(USERS_PATH);
-    }
+
 
     /// create a new user in the database
-    /// @param user the user object to create
+    /// @param user the user object to create (without the id, null)
     /// @param callback the callback to call when the operation is completed
-    ///              the callback will receive void
+    ///              the callback will receive new user id
     ///            if the operation fails, the callback will receive an exception
     /// @see DatabaseCallback
     /// @see User
-    public void createNewUser(@NotNull final User user, @Nullable final DatabaseCallback<Void> callback) {
-        writeData(USERS_PATH + "/" + user.getId(), user, callback);
+    public void createNewUser(@NotNull final User user,
+                              @Nullable final DatabaseCallback<String> callback) {
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("TAG", "createUserWithEmail:success");
+                        String uid = mAuth.getUid();
+                        user.setId(uid);
+                        writeData(USERS_PATH + "/" + uid, user, new DatabaseCallback<Void>() {
+                            @Override
+                            public void onCompleted(Void v) {
+                                if (callback != null) callback.onCompleted(uid);
+                            }
+
+                            @Override
+                            public void onFailed(Exception e) {
+                                if (callback != null) callback.onFailed(e);
+                            }
+                        });
+                    } else {
+                        Log.w("TAG", "createUserWithEmail:failure", task.getException());
+                        if (callback != null)
+                            callback.onFailed(task.getException());
+                    }
+                });
     }
+
+    /// Login with email and password
+    /// @param email , password
+    /// @param callback the callback to call when the operation is completed
+    ///              the callback will receive String (user id)
+    ///            if the operation fails, the callback will receive an exception
+    /// @see DatabaseCallback
+    /// @see FirebaseAuth
+    public void loginUser(@NotNull final String email,final String password,
+                          @Nullable final DatabaseCallback<String> callback) {
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        mAuth.signInWithEmailAndPassword(email,password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("TAG", "loginUserWithEmail:success");
+                        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                        if (callback != null)
+                            callback.onCompleted(uid);
+                    } else {
+                        Log.w("TAG", "loginUserWithEmail:failure", task.getException());
+                        if (callback != null)
+                            callback.onFailed(task.getException());
+                    }
+                });
+    }
+
+
+
+
 
     /// get a user from the database
     /// @param uid the id of the user to get
@@ -262,56 +311,6 @@ public class DatabaseService {
         deleteData(USERS_PATH + "/" + uid, callback);
     }
 
-    /// get a user by email and password
-    /// @param email the email of the user
-    /// @param password the password of the user
-    /// @param callback the callback to call when the operation is completed
-    ///            the callback will receive the user object
-    ///          if the operation fails, the callback will receive an exception
-    /// @see DatabaseCallback
-    /// @see User
-    public void getUserByEmailAndPassword(@NotNull final String email, @NotNull final String password, @NotNull final DatabaseCallback<User> callback) {
-        readData(USERS_PATH).orderByChild("email").equalTo(email).get()
-            .addOnCompleteListener(task -> {
-                if (!task.isSuccessful()) {
-                    Log.e(TAG, "Error getting data", task.getException());
-                    callback.onFailed(task.getException());
-                    return;
-                }
-                if (task.getResult().getChildrenCount() == 0) {
-                    callback.onFailed(new Exception("User not found"));
-                    return;
-                }
-                for (DataSnapshot dataSnapshot : task.getResult().getChildren()) {
-                    User user = dataSnapshot.getValue(User.class);
-                    if (user == null || !Objects.equals(user.getPassword(), password)) {
-                        callback.onFailed(new Exception("Invalid email or password"));
-                        return;
-                    }
-
-                    callback.onCompleted(user);
-                    return;
-
-                }
-            });
-    }
-
-    /// check if an email already exists in the database
-    /// @param email the email to check
-    /// @param callback the callback to call when the operation is completed
-    public void checkIfEmailExists(@NotNull final String email, @NotNull final DatabaseCallback<Boolean> callback) {
-        readData(USERS_PATH).orderByChild("email").equalTo(email).get()
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) {
-                        Log.e(TAG, "Error getting data", task.getException());
-                        callback.onFailed(task.getException());
-                        return;
-                    }
-                    boolean exists = task.getResult().getChildrenCount() > 0;
-                    callback.onCompleted(exists);
-                });
-    }
-
     public void updateUser(@NotNull final User user, @Nullable final DatabaseCallback<Void> callback) {
         runTransaction(USERS_PATH + "/" + user.getId(), User.class, currentUser -> user, new DatabaseCallback<User>() {
             @Override
@@ -332,63 +331,65 @@ public class DatabaseService {
 
 
 
-    /*
+ 
 
 
     // endregion User Section
 
-    // region food section
+    // region event section
 
-    /// create a new food in the database
-    /// @param food the food object to create
+    /// create a new event in the database
+    /// @param event the event object to create
     /// @param callback the callback to call when the operation is completed
     ///              the callback will receive void
     ///             if the operation fails, the callback will receive an exception
     /// @see DatabaseCallback
-    /// @see Food
-    public void createNewFood(@NotNull final Food food, @Nullable final DatabaseCallback<Void> callback) {
-        writeData(FOODS_PATH + "/" + food.getId(), food, callback);
+    /// @see Event
+    public void createNewEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
+        writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
     }
 
-    /// get a food from the database
-    /// @param foodId the id of the food to get
+    /// get a event from the database
+    /// @param eventId the id of the event to get
     /// @param callback the callback to call when the operation is completed
-    ///               the callback will receive the food object
+    ///               the callback will receive the event object
     ///              if the operation fails, the callback will receive an exception
     /// @see DatabaseCallback
-    /// @see Food
-    public void getFood(@NotNull final String foodId, @NotNull final DatabaseCallback<Food> callback) {
-        getData(FOODS_PATH + "/" + foodId, Food.class, callback);
+    /// @see Event
+    public void getEvent(@NotNull final String eventId, @NotNull final DatabaseCallback<Event> callback) {
+        getData(EVENTS_PATH + "/" + eventId, Event.class, callback);
     }
 
-    /// get all the foods from the database
+    /// get all the events from the database
     /// @param callback the callback to call when the operation is completed
-    ///              the callback will receive a list of food objects
+    ///              the callback will receive a list of event objects
     ///            if the operation fails, the callback will receive an exception
     /// @see DatabaseCallback
     /// @see List
-    /// @see Food
-    public void getFoodList(@NotNull final DatabaseCallback<List<Food>> callback) {
-        getDataList(FOODS_PATH, Food.class, callback);
+    /// @see Event
+    public void getEventList(@NotNull final DatabaseCallback<List<Event>> callback) {
+        getDataList(EVENTS_PATH, Event.class, callback);
     }
 
-    /// generate a new id for a new food in the database
-    /// @return a new id for the food
+    /// generate a new id for a new event in the database
+    /// @return a new id for the event
     /// @see #generateNewId(String)
-    /// @see Food
-    public String generateFoodId() {
-        return generateNewId(FOODS_PATH);
+    /// @see Event
+    public String generateEventId() {
+        return generateNewId(EVENTS_PATH);
     }
 
-    /// delete a food from the database
-    /// @param foodId the id of the food to delete
+    /// delete a event from the database
+    /// @param eventId the id of the event to delete
     /// @param callback the callback to call when the operation is completed
-    public void deleteFood(@NotNull final String foodId, @Nullable final DatabaseCallback<Void> callback) {
-        deleteData(FOODS_PATH + "/" + foodId, callback);
+    public void deleteEvent(@NotNull final String eventId, @Nullable final DatabaseCallback<Void> callback) {
+        deleteData(EVENTS_PATH + "/" + eventId, callback);
     }
 
-    // endregion food section
+    // endregion event section
 
+
+  /*
     // region cart section
 
     /// create a new cart in the database

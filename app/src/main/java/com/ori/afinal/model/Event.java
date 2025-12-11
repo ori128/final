@@ -2,69 +2,46 @@ package com.ori.afinal.model;
 
 public class Event {
 
-
-    protected  String id;
-
+    private String id;
     private String title;
     private String description;
-    private String dateTime;//calander
+    private String dateTime;
     private String type;
-    private String imageBase64;
     private String location;
-
-    protected  String status;
-
-
-
-    Integer maxNumOfParticipants;
+    private String status;
+    private Integer maxNumOfParticipants;
 
 
-    public Event(String id, String title, String description, String dateTime, String type, String imageBase64, String location, String status, Integer maxNumOfParticipants) {
+    protected  User eventAdmin;
+
+    public Event(String id, String title, String description, String dateTime, String type, String location, String status, Integer maxNumOfParticipants, User eventAdmin) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.dateTime = dateTime;
         this.type = type;
-        this.imageBase64 = imageBase64;
         this.location = location;
         this.status = status;
         this.maxNumOfParticipants = maxNumOfParticipants;
+        this.eventAdmin = eventAdmin;
     }
+
+
+
+
+
 
     public Event() {
-
+        this.status = "will happen";
     }
 
+    // --- GETTERS & SETTERS ---
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Integer getMaxNumOfParticipants() {
-        return maxNumOfParticipants;
-    }
-
-    public void setMaxNumOfParticipants(Integer maxNumOfParticipants) {
-        this.maxNumOfParticipants = maxNumOfParticipants;
     }
 
     public String getTitle() {
@@ -99,22 +76,50 @@ public class Event {
         this.type = type;
     }
 
-    public String getImageBase64() {
-        return imageBase64;
+    public String getLocation() {
+        return location;
     }
 
-    public void setImageBase64(String imageBase64) {
-        this.imageBase64 = imageBase64;
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getMaxNumOfParticipants() {
+        return maxNumOfParticipants;
+    }
+
+    public void setMaxNumOfParticipants(Integer maxNumOfParticipants) {
+        this.maxNumOfParticipants = maxNumOfParticipants;
+    }
+
+    public User getEventAdmin() {
+        return eventAdmin;
+    }
+
+    public void setEventAdmin(User eventAdmin) {
+        this.eventAdmin = eventAdmin;
     }
 
     @Override
     public String toString() {
         return "Event{" +
-                "title='" + title + '\'' +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", dateTime='" + dateTime + '\'' +
                 ", type='" + type + '\'' +
-                ", imageBase64='" + (imageBase64 != null ? "Image Included" : "No Image") + '\'' +
+                ", location='" + location + '\'' +
+                ", status='" + status + '\'' +
+                ", maxNumOfParticipants=" + maxNumOfParticipants +
+                ", eventAdmin=" + eventAdmin +
                 '}';
     }
 }
