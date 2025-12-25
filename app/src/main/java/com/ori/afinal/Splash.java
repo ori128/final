@@ -2,41 +2,38 @@ package com.ori.afinal;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.widget.ProgressBar;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class Splash extends AppCompatActivity {
+
+    ProgressBar progressBar;
+    int progress = 0;
+    Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_splash);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-        Thread mSplashThread = new Thread() {
+
+        progressBar = findViewById(R.id.progressBar);
+
+        handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                try {
-                    synchronized (this) {
-                        wait(3000); // מחכה 3 שניות
-                    }
-                } catch (InterruptedException ex) {
+                progress++;
+                progressBar.setProgress(progress);
+
+                if (progress < 100) {
+                    handler.postDelayed(this, 30);
+                } else {
+                    // מעבר לעמוד הראשי
+                    startActivity(new Intent(Splash.this, MainActivity.class));
+                    finish();
                 }
-                finish();
-
-                Intent intent = new Intent(Splash.this, Login.class);
-                startActivity(intent);
             }
-        };
-
-        mSplashThread.start();
+        }, 30);
     }
 }

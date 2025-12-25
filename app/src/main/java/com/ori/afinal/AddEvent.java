@@ -169,7 +169,7 @@ public class AddEvent extends AppCompatActivity {
                 Log.d(TAG, "Login success, user: " + user.getId());
                 // Generate new ID and create Event
 
-                user=new User()
+                user=new User();
                 String id = databaseService.generateEventId();
 
                  event = new Event(id, title, description, dateTime, type, location, "open",maxParticipants, user);
