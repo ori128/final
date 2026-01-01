@@ -1,4 +1,4 @@
-package com.example.testapp.adapters;
+package com.ori.afinal.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,8 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.testapp.R;
-import com.example.testapp.models.User;
+import com.ori.afinal.R;
+import com.ori.afinal.model.User;
 import com.google.android.material.chip.Chip;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     @NonNull
     @Override
     public UserAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_user, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_item_user, parent, false);
         return new ViewHolder(view);
     }
 
@@ -49,11 +49,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         
         // Set initials
         String initials = "";
-        if (user.getFirstName() != null && !user.getFirstName().isEmpty()) {
-            initials += user.getFirstName().charAt(0);
+        if (user.getFname() != null && !user.getFname().isEmpty()) {
+            initials += user.getFname().charAt(0);
         }
-        if (user.getLastName() != null && !user.getLastName().isEmpty()) {
-            initials += user.getLastName().charAt(0);
+        if (user.getLname() != null && !user.getLname().isEmpty()) {
+            initials += user.getLname().charAt(0);
         }
         holder.tvInitials.setText(initials.toUpperCase());
         

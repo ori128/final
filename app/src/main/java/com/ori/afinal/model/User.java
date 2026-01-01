@@ -44,6 +44,9 @@ public class User {
         this.fname = fname;
         this.lname = lname;
     }
+    public String getFullName (){
+        return (fname+" "+lname);
+    }
 
     public String getId() {
         return id;
@@ -91,6 +94,9 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    public boolean isAdmin(){
+        return isAdmin;
     }
 
     @Override
