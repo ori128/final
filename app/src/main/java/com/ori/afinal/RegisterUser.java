@@ -20,6 +20,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.model.User;
 
+import java.util.Objects;
+
 public class RegisterUser extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "Register";
@@ -85,20 +87,31 @@ public class RegisterUser extends AppCompatActivity implements View.OnClickListe
     private void registerUser(String fname, String lname, String phone, String email, String password) {
         Log.d(TAG, "registerUser: Registering user...");
 
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
 
-        User user = new User("", fname, lname, email, phone, password, false);
+                    if (!task.isSuccessful()) {
+                        Log.e(TAG, "Auth failed", task.getException());
+                        Toast.makeText(this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        createUserInDatabase(user);
+                    String uid = Objects.requireNonNull(mAuth.getCurrentUser()).getUid();
+
+                    boolean isAdmin = false;
+                    User user = new User(uid, fname, lname, phone, email, password, isAdmin);
+                    createUserInDatabase(user);
+                });
     }
 
 
     private void createUserInDatabase(User user) {
-        databaseService.createNewUser(user, new DatabaseService.DatabaseCallback<String>() {
+        databaseService.createNewUser2(user, new DatabaseService.DatabaseCallback<Void>() {
             @Override
-            public void onCompleted(String uid) {
+            public void onCompleted(Void object) {
                 Log.d(TAG, "createUserInDatabase: User created successfully");
                 /// save the user to shared preferences
-                user.setId(uid);
+
                 Log.d(TAG, "createUserInDatabase: Redirecting to MainActivity");
                 /// Redirect to MainActivity and clear back stack to prevent user from going back to register screen
 

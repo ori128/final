@@ -252,6 +252,10 @@ public class DatabaseService {
                     }
                 });
     }
+    public void createNewUser2(@NotNull final User user,
+                              @Nullable final DatabaseCallback<Void> callback) {
+        writeData(USERS_PATH + "/" + user.getId(), user, callback);
+    }
 
     /// Login with email and password
     /// @param email , password

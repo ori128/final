@@ -108,6 +108,13 @@ public class Login extends AppCompatActivity implements View.OnClickListener {
                             databaseService.getUser(uid, new DatabaseService.DatabaseCallback<User>() {
                                 @Override
                                 public void onCompleted(User user) {
+                                    if (user == null) {
+                                        Log.e(TAG, "User data not found in database for UID: " + uid);
+                                        etPassword.setError("נתוני משתמש לא נמצאו במסד הנתונים");
+                                        etPassword.requestFocus();
+                                        return;
+                                    }
+                                    
                                     Log.d(TAG, "Login success, user: " + user.getId());
 
                                     Intent homepageIntent = new Intent(Login.this, HomePage.class);

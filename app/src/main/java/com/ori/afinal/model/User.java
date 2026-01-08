@@ -7,24 +7,24 @@ public class User {
     String phone;
     String email;
     String password;
-    Boolean isAdmin;
+    Boolean admin;
 
     public Boolean getAdmin() {
-        return isAdmin;
+        return admin;
     }
 
     public void setAdmin(Boolean admin) {
-        isAdmin = admin;
+        admin = admin;
     }
 
-    public User(String id, String fname, String lname, String phone, String email, String password, Boolean isAdmin) {
+    public User(String id, String fname, String lname, String phone, String email, String password, Boolean admin) {
         this.id = id;
         this.fname = fname;
         this.lname = lname;
         this.phone = phone;
         this.email = email;
         this.password = password;
-        this.isAdmin = isAdmin;
+        this.admin = admin;
     }
 
     public User(String id, String fname, String lname, String phone, String email, String password) {
@@ -95,9 +95,7 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-    public boolean isAdmin(){
-        return isAdmin;
-    }
+
 
     @Override
     public String toString() {
