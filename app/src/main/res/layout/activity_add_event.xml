@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -8,112 +7,109 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
-        android:gravity="center_horizontal">
+        android:padding="24dp">
 
-        <!-- TITLE HEADER -->
-        <TextView
-            android:id="@+id/titleHeader"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="יצירת אירוע"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:layout_marginTop="10dp"
-            android:padding="6dp"
-            android:textColor="#000000" />
-
-        <!-- Title -->
-        <EditText
-            android:id="@+id/editTextTitle"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:hint="שם אירוע"
-            android:padding="10dp" />
-
-        <!-- Description -->
-        <EditText
-            android:id="@+id/editTextDescription"
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_marginTop="16dp"
-            android:hint="תיאור האירוע"
-            android:padding="10dp" />
-
-        <!-- DATE PICKER -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="תאריך:"
-            android:textSize="18sp"
-            android:layout_marginTop="20dp" />
+            android:layout_marginBottom="16dp"
+            android:text="יצירת פגישה חדשה"
+            android:textAlignment="center"
+            android:textSize="22sp"
+            android:textStyle="bold" />
 
         <EditText
-            android:id="@+id/editTextDate"
+            android:id="@+id/et_event_title"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="10dp"
-            android:hint="בחר תאריך"
+            android:layout_height="wrap_content"
+            android:hint="כותרת הפגישה" />
+
+        <EditText
+            android:id="@+id/et_event_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="תיאור"
+            android:layout_marginTop="8dp" />
+
+        <!-- תאריך ושעה -->
+        <EditText
+            android:id="@+id/et_event_date_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="בחר תאריך ושעה"
             android:focusable="false"
             android:clickable="true"
-            android:padding="10dp" />
+            android:layout_marginTop="8dp" />
 
-        <!-- TIME PICKER -->
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- סוג האירוע עם RadioButtons -->
+
+        <RadioGroup
+            android:id="@+id/radio_group_event_type"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="שעה:"
-            android:textSize="18sp"
-            android:layout_marginTop="20dp" />
+            android:orientation="vertical"
+            android:layoutDirection="rtl"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="סוג הפגישה"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/rb_meeting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Meeting"
+                android:textAlignment="viewStart" />
+
+            <RadioButton
+                android:id="@+id/rb_call"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Call"
+                android:textAlignment="viewStart" />
+
+            <RadioButton
+                android:id="@+id/rb_event"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Event"
+                android:textAlignment="viewStart" />
+
+            <RadioButton
+                android:id="@+id/rb_other"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Something else"
+                android:textAlignment="viewStart" />
+        </RadioGroup>
 
         <EditText
-            android:id="@+id/editTextTime"
+            android:id="@+id/et_event_location"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="10dp"
-            android:focusable="false"
-            android:clickable="true"
-            android:hint="בחר שעה"
-            android:padding="10dp" />
+            android:layout_height="wrap_content"
+            android:hint="מיקום / קישור"
+            android:layout_marginTop="8dp" />
 
-        <!-- Type -->
-        <Spinner
-            android:id="@+id/editTextType"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="20dp" />
-
-        <!-- Location -->
         <EditText
-            android:id="@+id/editTextLocation"
+            android:id="@+id/et_event_max_participants"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:hint="מיקום"
-            android:padding="10dp" />
-
-        <!-- Max Participants -->
-        <EditText
-            android:id="@+id/editTextMaxParticipants"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:hint="מספר משתתפים"
+            android:layout_height="wrap_content"
+            android:hint="מספר משתתפים מקסימלי"
             android:inputType="number"
-            android:padding="10dp" />
+            android:layout_marginTop="8dp" />
 
-        <!-- Submit -->
         <Button
-            android:id="@+id/buttonSubmit"
+            android:id="@+id/btn_create_event"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="28dp"
-            android:text="צור אירוע"
-            android:textColor="#FFFFFF"
+            android:layout_height="wrap_content"
+            android:text="צור פגישה"
+            android:layout_marginTop="24dp"
             android:backgroundTint="#2196F3"
-            android:textSize="18sp"
-            android:padding="10dp" />
+            android:textColor="#FFFFFF" />
 
     </LinearLayout>
 </ScrollView>

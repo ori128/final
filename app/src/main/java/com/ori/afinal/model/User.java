@@ -108,5 +108,8 @@ public class User {
                 ", password='" + password + '\'' +
                 '}';
     }
+
+    public void setUid(String uid) {
+    }
 }
 

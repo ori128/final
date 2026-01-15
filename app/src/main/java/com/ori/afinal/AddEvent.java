@@ -1,148 +1,115 @@
 package com.ori.afinal;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.model.Event;
 import com.ori.afinal.model.User;
 
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 public class AddEvent extends AppCompatActivity {
 
-    private EditText editTextTitle, editTextDescription, editTextLocation, editTextMaxParticipants;
-    private EditText editTextTime, editTextDate;
-    private Spinner editTextType;
-    private Button buttonSubmit;
+    private static final String TAG = "AddEvent";
+
+    private EditText etTitle, etDescription, etDateTime, etLocation, etMaxParticipants;
+    private RadioGroup radioGroupType;
+    private Button btnCreateEvent;
 
     private DatabaseService databaseService;
-    private static final String TAG = "AddEvent";
-    private Event event;
+    private FirebaseAuth mAuth;
+
+    private Calendar selectedDateTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_add_event);
 
-
-
-
         databaseService = DatabaseService.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
-        // Views
-        editTextTitle = findViewById(R.id.editTextTitle);
-        editTextDescription = findViewById(R.id.editTextDescription);
-        editTextLocation = findViewById(R.id.editTextLocation);
-        editTextMaxParticipants = findViewById(R.id.editTextMaxParticipants);
-        editTextTime = findViewById(R.id.editTextTime);
-        editTextDate = findViewById(R.id.editTextDate);
-        editTextType = findViewById(R.id.editTextType);
-        buttonSubmit = findViewById(R.id.buttonSubmit);
+        etTitle = findViewById(R.id.et_event_title);
+        etDescription = findViewById(R.id.et_event_description);
+        etDateTime = findViewById(R.id.et_event_date_time);
+        etLocation = findViewById(R.id.et_event_location);
+        etMaxParticipants = findViewById(R.id.et_event_max_participants);
+        radioGroupType = findViewById(R.id.radio_group_event_type);
+        btnCreateEvent = findViewById(R.id.btn_create_event);
 
-        setupDatePicker();
-        setupTimePicker();
-        setupTypeSpinner();
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets bar = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(bar.left, bar.top, bar.right, bar.bottom);
-            return insets;
-        });
-
-        buttonSubmit.setOnClickListener(v -> createEvent());
+        setupDateTimePicker();
+        btnCreateEvent.setOnClickListener(v -> createEvent());
     }
 
-    // --- DATE PICKER ---
-    private void setupDatePicker() {
-        editTextDate.setOnClickListener(v -> {
-            Calendar c = Calendar.getInstance();
-            int year = c.get(Calendar.YEAR);
-            int month = c.get(Calendar.MONTH);
-            int day = c.get(Calendar.DAY_OF_MONTH);
+    private void setupDateTimePicker() {
+        selectedDateTime = Calendar.getInstance();
 
-            DatePickerDialog dpd = new DatePickerDialog(this, (view, y, m, d) -> {
-                editTextDate.setText(String.format("%02d/%02d/%04d", d, m + 1, y));
-            }, year, month, day);
-            dpd.show();
-        });
-    }
+        etDateTime.setOnClickListener(v -> {
+            // Material Date Picker
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("בחר תאריך")
+                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .build();
 
-    // --- TIME PICKER (חצאי שעות) ---
-    private void setupTimePicker() {
-        editTextTime.setOnClickListener(v -> {
-            Calendar c = Calendar.getInstance();
-            int hour = c.get(Calendar.HOUR_OF_DAY);
-            int minute = 0;
+            datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
 
-            TimePickerDialog tpd = new TimePickerDialog(this, (view, h, m) -> {
-                editTextTime.setText(String.format("%02d:%02d", h, m));
-            }, hour, minute, true);
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                selectedDateTime.setTimeInMillis(selection);
 
-            tpd.setOnShowListener(dialog -> {
-                try {
-                    android.widget.NumberPicker minutePicker = tpd.findViewById(
-                            getResources().getIdentifier("android:id/minute", null, null)
-                    );
-                    if (minutePicker != null) {
-                        minutePicker.setMinValue(0);
-                        minutePicker.setMaxValue(1);
-                        minutePicker.setDisplayedValues(new String[]{"00", "30"});
-                    }
-                } catch (Exception ignored) {}
+                // Material Time Picker
+                MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                        .setTimeFormat(TimeFormat.CLOCK_24H)
+                        .setHour(selectedDateTime.get(Calendar.HOUR_OF_DAY))
+                        .setMinute(selectedDateTime.get(Calendar.MINUTE))
+                        .setTitleText("בחר שעה")
+                        .build();
+
+                timePicker.show(getSupportFragmentManager(), "TIME_PICKER");
+
+                timePicker.addOnPositiveButtonClickListener(t -> {
+                    selectedDateTime.set(Calendar.HOUR_OF_DAY, timePicker.getHour());
+                    selectedDateTime.set(Calendar.MINUTE, timePicker.getMinute());
+
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                    etDateTime.setText(sdf.format(selectedDateTime.getTime()));
+                });
             });
-
-            tpd.show();
         });
     }
 
-    // --- TYPE SPINNER ---
-    private void setupTypeSpinner() {
-        ArrayList<String> types = new ArrayList<>();
-        types.add("יום הולדת");
-        types.add("יום נישואים");
-        types.add("חתונה");
-        types.add("על האש");
-        types.add("מסיבה");
-        types.add("דייט");
-        types.add("מפגש חברים");
-        types.add("אירוע משפחתי");
-        types.add("אירוע עבודה");
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, types);
-        editTextType.setAdapter(adapter);
-    }
-
-    // --- CREATE EVENT ---
     private void createEvent() {
-        String title = editTextTitle.getText().toString().trim();
-        String description = editTextDescription.getText().toString().trim();
-        String type = editTextType.getSelectedItem().toString();
-        String location = editTextLocation.getText().toString().trim();
-        String maxParticipantsStr = editTextMaxParticipants.getText().toString().trim();
-        String date = editTextDate.getText().toString().trim();
-        String time = editTextTime.getText().toString().trim();
+        String title = etTitle.getText().toString().trim();
+        String description = etDescription.getText().toString().trim();
+        String dateTime = etDateTime.getText().toString().trim();
+        String location = etLocation.getText().toString().trim();
+        String maxParticipantsStr = etMaxParticipants.getText().toString().trim();
 
-        if (title.isEmpty() || description.isEmpty() || location.isEmpty() ||
-                maxParticipantsStr.isEmpty() || date.isEmpty() || time.isEmpty()) {
-            Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show();
+        // סוג האירוע מה- RadioGroup
+        int selectedId = radioGroupType.getCheckedRadioButtonId();
+        if (selectedId == -1) {
+            Toast.makeText(this, "אנא בחר סוג אירוע", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        RadioButton selectedRadio = findViewById(selectedId);
+        String type = selectedRadio.getText().toString();
+
+        if (title.isEmpty() || dateTime.isEmpty() || type.isEmpty() || maxParticipantsStr.isEmpty()) {
+            Toast.makeText(this, "אנא מלא את כל השדות החיוניים", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -150,67 +117,42 @@ public class AddEvent extends AppCompatActivity {
         try {
             maxParticipants = Integer.parseInt(maxParticipantsStr);
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Max participants must be a number", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "מספר משתתפים לא תקין", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String dateTime = date + " " + time;
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, "משתמש לא מחובר", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        String uid = mAuth.getCurrentUser().getUid();
+        User admin = new User();
+        admin.setUid(uid);
 
-
-
-
-         FirebaseAuth mAuth= FirebaseAuth.getInstance();
-
-        String userid = mAuth.getUid();
-        databaseService.getUser(userid, new DatabaseService.DatabaseCallback<User>() {
-            @Override
-            public void onCompleted(User user) {
-                Log.d(TAG, "Login success, user: " + user.getId());
-                // Generate new ID and create Event
-
-                user=new User();
-                String id = databaseService.generateEventId();
-
-                 event = new Event(id, title, description, dateTime, type, location, "open",maxParticipants, user);
-
-
-                Log.d(TAG,event.toString());
-                saveEventInDataBase(event);
-
-
-                }
-
-            @Override
-            public void onFailed(Exception e) {
-
-                Toast.makeText(AddEvent.this, "Failed to get user: " + e.getMessage(), Toast.LENGTH_LONG).show();
-              return;
-            }
-        });
-
-
-
-
-
-
-        // Save to Firebase
-
-    }
-
-    private void saveEventInDataBase(Event event) {
+        Event event = new Event(
+                databaseService.generateEventId(),
+                title,
+                description,
+                dateTime,
+                type,
+                location,
+                maxParticipants,
+                admin
+        );
 
         databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
-                Toast.makeText(AddEvent.this, "Event saved successfully!", Toast.LENGTH_LONG).show();
-
-                Log.d(TAG,event.toString());
+                Log.d(TAG, "Event created successfully");
+                Toast.makeText(AddEvent.this, "האירוע נוצר בהצלחה", Toast.LENGTH_SHORT).show();
+                finish();
             }
 
             @Override
             public void onFailed(Exception e) {
-                Toast.makeText(AddEvent.this, "Failed to save event: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Log.e(TAG, "Failed to create event", e);
+                Toast.makeText(AddEvent.this, "שגיאה ביצירת האירוע", Toast.LENGTH_SHORT).show();
             }
         });
     }
