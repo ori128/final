@@ -12,9 +12,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Final">
         <activity
-            android:name=".item_user"
+            android:name=".EventControl"
             android:exported="false" />
-        <!-- Splash = מסך פתיחה (Launcher) -->
+        <activity
+            android:name=".EventManage"
+            android:exported="false" />
+        <activity
+            android:name=".item_user"
+            android:exported="false" /> <!-- Splash = מסך פתיחה (Launcher) -->
         <activity
             android:name=".Splash"
             android:exported="true">

@@ -17,4 +17,13 @@
         android:text="+ קבע פגישה"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btneventcontrol"
+        android:layout_width="147dp"
+        android:layout_height="81dp"
+        android:text="ניהול פגישות"
+        tools:layout_editor_absoluteX="152dp"
+        tools:layout_editor_absoluteY="280dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

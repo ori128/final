@@ -11,8 +11,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.ori.afinal.model.Event;
+
 public class HomePage extends AppCompatActivity implements View.OnClickListener {
     private Button btnaddevent;
+    private Button btneventcontrol;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,15 +30,24 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         });
         initViews();
     }
-    public void initViews(){
+
+    public void initViews() {
         btnaddevent = findViewById(R.id.btnaddevent);
         btnaddevent.setOnClickListener(this);
+        btneventcontrol = findViewById(R.id.btneventcontrol);
+        btneventcontrol.setOnClickListener(this);
+
     }
 
     @Override
     public void onClick(View view) {
-        if (view.getId() == btnaddevent.getId()){
+
+        if (view.getId() == btnaddevent.getId()) {
             Intent go = new Intent(HomePage.this, AddEvent.class);
+            startActivity(go);
+        }
+        if (view.getId() == btneventcontrol.getId()) {
+            Intent go = new Intent(HomePage.this, EventControl.class);
             startActivity(go);
         }
     }
