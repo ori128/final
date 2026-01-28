@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Final">
         <activity
+            android:name=".UpdateEvent"
+            android:exported="false" />
+        <activity
             android:name=".EventControl"
             android:exported="false" />
         <activity

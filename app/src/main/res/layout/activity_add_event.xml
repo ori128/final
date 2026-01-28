@@ -14,7 +14,6 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:text="יצירת פגישה חדשה"
-            android:textAlignment="center"
             android:textSize="22sp"
             android:textStyle="bold" />
 
@@ -31,7 +30,6 @@
             android:hint="תיאור"
             android:layout_marginTop="8dp" />
 
-        <!-- תאריך ושעה -->
         <EditText
             android:id="@+id/et_event_date_time"
             android:layout_width="match_parent"
@@ -41,57 +39,21 @@
             android:clickable="true"
             android:layout_marginTop="8dp" />
 
-        <!-- סוג האירוע עם RadioButtons -->
-
         <RadioGroup
             android:id="@+id/radio_group_event_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layoutDirection="rtl"
-            android:layout_marginTop="4dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="סוג הפגישה"
-                android:textStyle="bold" />
-
-            <RadioButton
-                android:id="@+id/rb_meeting"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Meeting"
-                android:textAlignment="viewStart" />
-
-            <RadioButton
-                android:id="@+id/rb_call"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Call"
-                android:textAlignment="viewStart" />
-
-            <RadioButton
-                android:id="@+id/rb_event"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Event"
-                android:textAlignment="viewStart" />
-
-            <RadioButton
-                android:id="@+id/rb_other"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Something else"
-                android:textAlignment="viewStart" />
+            android:layout_marginTop="16dp">
+            <RadioButton android:id="@+id/rb_meeting" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Meeting" />
+            <RadioButton android:id="@+id/rb_call" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Call" />
+            <RadioButton android:id="@+id/rb_event" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Event" />
         </RadioGroup>
 
         <EditText
             android:id="@+id/et_event_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="מיקום / קישור"
+            android:hint="מיקום"
             android:layout_marginTop="8dp" />
 
         <EditText
@@ -101,6 +63,23 @@
             android:hint="מספר משתתפים מקסימלי"
             android:inputType="number"
             android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/btn_invite_users"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#4CAF50"
+            android:text="הזמן משתמשים מהרשימה"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/tv_selected_users_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="לא נבחרו מוזמנים"
+            android:layout_marginTop="4dp" />
 
         <Button
             android:id="@+id/btn_create_event"

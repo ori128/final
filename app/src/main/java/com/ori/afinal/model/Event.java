@@ -1,5 +1,8 @@
 package com.ori.afinal.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Event {
 
     private String id;
@@ -11,10 +14,12 @@ public class Event {
     private String status;   // ACTIVE / CANCELED / FINISHED
     private int maxNumOfParticipants;
     private User eventAdmin;
+    private List<String> invitedUsers; // רשימת ה-UID של המשתמשים המוזמנים
 
     // חובה ל-Firebase
     public Event() {
         this.status = "ACTIVE";
+        this.invitedUsers = new ArrayList<>();
     }
 
     // קונסטרקטור ליצירת אירוע חדש
@@ -36,6 +41,7 @@ public class Event {
         this.maxNumOfParticipants = maxNumOfParticipants;
         this.eventAdmin = eventAdmin;
         this.status = "ACTIVE";
+        this.invitedUsers = new ArrayList<>();
     }
 
     // --- GETTERS & SETTERS ---
@@ -66,18 +72,15 @@ public class Event {
     public User getEventAdmin() { return eventAdmin; }
     public void setEventAdmin(User eventAdmin) { this.eventAdmin = eventAdmin; }
 
+    public List<String> getInvitedUsers() { return invitedUsers; }
+    public void setInvitedUsers(List<String> invitedUsers) { this.invitedUsers = invitedUsers; }
+
     @Override
     public String toString() {
         return "Event{" +
                 "id='" + id + '\'' +
                 ", title='" + title + '\'' +
-                ", description='" + description + '\'' +
-                ", dateTime='" + dateTime + '\'' +
-                ", type='" + type + '\'' +
-                ", location='" + location + '\'' +
-                ", status='" + status + '\'' +
-                ", maxNumOfParticipants=" + maxNumOfParticipants +
-                ", eventAdmin=" + eventAdmin +
+                ", invitedCount=" + (invitedUsers != null ? invitedUsers.size() : 0) +
                 '}';
     }
 }

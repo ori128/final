@@ -6,11 +6,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.datepicker.CalendarConstraints;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
@@ -20,21 +21,24 @@ import com.ori.afinal.model.Event;
 import com.ori.afinal.model.User;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 public class AddEvent extends AppCompatActivity {
 
-    private static final String TAG = "AddEvent";
-
     private EditText etTitle, etDescription, etDateTime, etLocation, etMaxParticipants;
     private RadioGroup radioGroupType;
-    private Button btnCreateEvent;
+    private Button btnCreateEvent, btnInviteUsers;
+    private TextView tvSelectedCount;
 
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
-
     private Calendar selectedDateTime;
+
+    private List<User> allUsersFromDb = new ArrayList<>();
+    private List<String> selectedUserIds = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +48,14 @@ public class AddEvent extends AppCompatActivity {
         databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        initViews();
+        setupDateTimePicker();
+
+        btnInviteUsers.setOnClickListener(v -> showInviteUsersDialog());
+        btnCreateEvent.setOnClickListener(v -> createEvent());
+    }
+
+    private void initViews() {
         etTitle = findViewById(R.id.et_event_title);
         etDescription = findViewById(R.id.et_event_description);
         etDateTime = findViewById(R.id.et_event_date_time);
@@ -51,42 +63,71 @@ public class AddEvent extends AppCompatActivity {
         etMaxParticipants = findViewById(R.id.et_event_max_participants);
         radioGroupType = findViewById(R.id.radio_group_event_type);
         btnCreateEvent = findViewById(R.id.btn_create_event);
+        btnInviteUsers = findViewById(R.id.btn_invite_users);
+        tvSelectedCount = findViewById(R.id.tv_selected_users_count);
+    }
 
-        setupDateTimePicker();
-        btnCreateEvent.setOnClickListener(v -> createEvent());
+    private void showInviteUsersDialog() {
+        databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
+            @Override
+            public void onCompleted(List<User> users) {
+                if (users == null) return;
+
+                String currentUid = mAuth.getCurrentUser().getUid();
+                allUsersFromDb.clear();
+
+                // סינון המשתמש הנוכחי בעזרת getId()
+                for (User u : users) {
+                    if (u.getId() != null && !u.getId().equals(currentUid)) {
+                        allUsersFromDb.add(u);
+                    }
+                }
+
+                String[] userNames = new String[allUsersFromDb.size()];
+                boolean[] checkedItems = new boolean[allUsersFromDb.size()];
+
+                for (int i = 0; i < allUsersFromDb.size(); i++) {
+                    User u = allUsersFromDb.get(i);
+                    userNames[i] = (u.getFullName() != null && !u.getFullName().isEmpty()) ? u.getFullName() : u.getEmail();
+                    checkedItems[i] = selectedUserIds.contains(u.getId());
+                }
+
+                new AlertDialog.Builder(AddEvent.this)
+                        .setTitle("בחר משתמשים להזמנה")
+                        .setMultiChoiceItems(userNames, checkedItems, (dialog, which, isChecked) -> {
+                            String userId = allUsersFromDb.get(which).getId();
+                            if (isChecked) {
+                                if (!selectedUserIds.contains(userId)) selectedUserIds.add(userId);
+                            } else {
+                                selectedUserIds.remove(userId);
+                            }
+                        })
+                        .setPositiveButton("אישור", (dialog, which) -> {
+                            tvSelectedCount.setText("נבחרו " + selectedUserIds.size() + " מוזמנים");
+                        })
+                        .show();
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                Toast.makeText(AddEvent.this, "שגיאה בטעינת רשימה", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupDateTimePicker() {
         selectedDateTime = Calendar.getInstance();
-
         etDateTime.setOnClickListener(v -> {
-            // Material Date Picker
-            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
-                    .setTitleText("בחר תאריך")
-                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
-                    .build();
-
-            datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
-
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker().build();
+            datePicker.show(getSupportFragmentManager(), "DATE");
             datePicker.addOnPositiveButtonClickListener(selection -> {
                 selectedDateTime.setTimeInMillis(selection);
-
-                // Material Time Picker
-                MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
-                        .setTimeFormat(TimeFormat.CLOCK_24H)
-                        .setHour(selectedDateTime.get(Calendar.HOUR_OF_DAY))
-                        .setMinute(selectedDateTime.get(Calendar.MINUTE))
-                        .setTitleText("בחר שעה")
-                        .build();
-
-                timePicker.show(getSupportFragmentManager(), "TIME_PICKER");
-
+                MaterialTimePicker timePicker = new MaterialTimePicker.Builder().setTimeFormat(TimeFormat.CLOCK_24H).build();
+                timePicker.show(getSupportFragmentManager(), "TIME");
                 timePicker.addOnPositiveButtonClickListener(t -> {
                     selectedDateTime.set(Calendar.HOUR_OF_DAY, timePicker.getHour());
                     selectedDateTime.set(Calendar.MINUTE, timePicker.getMinute());
-
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-                    etDateTime.setText(sdf.format(selectedDateTime.getTime()));
+                    etDateTime.setText(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(selectedDateTime.getTime()));
                 });
             });
         });
@@ -94,65 +135,39 @@ public class AddEvent extends AppCompatActivity {
 
     private void createEvent() {
         String title = etTitle.getText().toString().trim();
-        String description = etDescription.getText().toString().trim();
-        String dateTime = etDateTime.getText().toString().trim();
-        String location = etLocation.getText().toString().trim();
-        String maxParticipantsStr = etMaxParticipants.getText().toString().trim();
+        String maxStr = etMaxParticipants.getText().toString().trim();
 
-        // סוג האירוע מה- RadioGroup
-        int selectedId = radioGroupType.getCheckedRadioButtonId();
-        if (selectedId == -1) {
-            Toast.makeText(this, "אנא בחר סוג אירוע", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        RadioButton selectedRadio = findViewById(selectedId);
-        String type = selectedRadio.getText().toString();
-
-        if (title.isEmpty() || dateTime.isEmpty() || type.isEmpty() || maxParticipantsStr.isEmpty()) {
-            Toast.makeText(this, "אנא מלא את כל השדות החיוניים", Toast.LENGTH_SHORT).show();
+        if (title.isEmpty() || maxStr.isEmpty()) {
+            Toast.makeText(this, "מלא שדות חובה", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        int maxParticipants;
-        try {
-            maxParticipants = Integer.parseInt(maxParticipantsStr);
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, "מספר משתתפים לא תקין", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (mAuth.getCurrentUser() == null) {
-            Toast.makeText(this, "משתמש לא מחובר", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String uid = mAuth.getCurrentUser().getUid();
         User admin = new User();
-        admin.setUid(uid);
+        admin.setUid(mAuth.getCurrentUser().getUid());
 
         Event event = new Event(
                 databaseService.generateEventId(),
                 title,
-                description,
-                dateTime,
-                type,
-                location,
-                maxParticipants,
+                etDescription.getText().toString(),
+                etDateTime.getText().toString(),
+                "Meeting",
+                etLocation.getText().toString(),
+                Integer.parseInt(maxStr),
                 admin
         );
+
+        // הוספת המוזמנים לאירוע
+        event.setInvitedUsers(new ArrayList<>(selectedUserIds));
 
         databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
-                Log.d(TAG, "Event created successfully");
-                Toast.makeText(AddEvent.this, "האירוע נוצר בהצלחה", Toast.LENGTH_SHORT).show();
+                Toast.makeText(AddEvent.this, "אירוע נוצר בהצלחה!", Toast.LENGTH_SHORT).show();
                 finish();
             }
-
             @Override
             public void onFailed(Exception e) {
-                Log.e(TAG, "Failed to create event", e);
-                Toast.makeText(AddEvent.this, "שגיאה ביצירת האירוע", Toast.LENGTH_SHORT).show();
+                Toast.makeText(AddEvent.this, "שגיאה בשמירה", Toast.LENGTH_SHORT).show();
             }
         });
     }
