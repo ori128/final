@@ -23,6 +23,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // וודא שקובץ העיצוב item_event_dashboard.xml קיים בתיקיית layout!
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_event_dashboard, parent, false);
         return new EventViewHolder(view);
     }
@@ -35,7 +36,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.tvLocation.setText(event.getLocation());
         holder.tvType.setText(event.getType());
 
-        // טיפול בתאריך ושעה (מניחים שהפורמט הוא "yyyy-MM-dd HH:mm")
         if (event.getDateTime() != null && event.getDateTime().contains(" ")) {
             String[] parts = event.getDateTime().split(" ");
             if (parts.length >= 2) {
@@ -47,6 +47,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             }
         } else {
             holder.tvDate.setText(event.getDateTime());
+            holder.tvTime.setText("");
         }
     }
 

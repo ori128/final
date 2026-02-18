@@ -5,14 +5,12 @@ plugins {
 
 android {
     namespace = "com.ori.afinal"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 34  // שינוי לגרסה יציבה (במקום release(36))
 
     defaultConfig {
         applicationId = "com.ori.afinal"
-        minSdk = 30
-        targetSdk = 36
+        minSdk = 24 // מומלץ מינימום 24 כדי לתמוך ביותר מכשירים
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
