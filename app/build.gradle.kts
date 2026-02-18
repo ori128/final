@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace = "com.ori.afinal"
-    compileSdk = 34  // שינוי לגרסה יציבה (במקום release(36))
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.ori.afinal"
-        minSdk = 24 // מומלץ מינימום 24 כדי לתמוך ביותר מכשירים
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -27,8 +27,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 

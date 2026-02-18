@@ -1,13 +1,16 @@
 package com.ori.afinal;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -32,6 +35,7 @@ public class HomePage extends AppCompatActivity {
     private TextView tvGreeting, tvStatsCount, tvStatsDuration;
     private RecyclerView rvEvents;
     private FloatingActionButton fabAddEvent;
+    private ImageButton btnLogout; // הוספנו את כפתור ההתנתקות
 
     private EventAdapter eventAdapter;
     private DatabaseService databaseService;
@@ -71,22 +75,51 @@ public class HomePage extends AppCompatActivity {
         tvStatsDuration = findViewById(R.id.tv_stats_duration);
         fabAddEvent = findViewById(R.id.fab_add_event);
         rvEvents = findViewById(R.id.rv_events);
+        btnLogout = findViewById(R.id.btn_logout); // קישור הכפתור מה-XML
 
-        rvEvents.setLayoutManager(new LinearLayoutManager(this));
-        eventAdapter = new EventAdapter();
-        rvEvents.setAdapter(eventAdapter);
+        // הגדרת ה-RecyclerView
+        if (rvEvents != null) {
+            rvEvents.setLayoutManager(new LinearLayoutManager(this));
+            eventAdapter = new EventAdapter();
+            rvEvents.setAdapter(eventAdapter);
+        }
 
-        fabAddEvent.setOnClickListener(v -> {
-            Intent intent = new Intent(HomePage.this, AddEvent.class);
-            startActivity(intent);
-        });
+        if (fabAddEvent != null) {
+            fabAddEvent.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePage.this, AddEvent.class);
+                startActivity(intent);
+            });
+        }
+
+        // לוגיקה להתנתקות
+        if (btnLogout != null) {
+            btnLogout.setOnClickListener(v -> showLogoutDialog());
+        }
+    }
+
+    private void showLogoutDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("התנתקות")
+                .setMessage("האם אתה בטוח שברצונך להתנתק?")
+                .setPositiveButton("כן, התנתק", (dialog, which) -> {
+                    // ביצוע התנתקות
+                    mAuth.signOut();
+
+                    // מעבר למסך הראשי (MainActivity)
+                    Intent intent = new Intent(HomePage.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setNegativeButton("ביטול", null)
+                .show();
     }
 
     private void loadUserData() {
         databaseService.getUser(currentUserId, new DatabaseService.DatabaseCallback<User>() {
             @Override
             public void onCompleted(User user) {
-                if (user != null && user.getFname() != null) {
+                if (user != null && user.getFname() != null && tvGreeting != null) {
                     tvGreeting.setText("שלום, " + user.getFname());
                 }
             }
@@ -112,9 +145,16 @@ public class HomePage extends AppCompatActivity {
                     totalDuration += 1;
                 }
 
-                eventAdapter.setEvents(myEvents);
-                tvStatsCount.setText(String.valueOf(myEvents.size()));
-                tvStatsDuration.setText(totalDuration + "h");
+                if (eventAdapter != null) {
+                    eventAdapter.setEvents(myEvents);
+                }
+
+                if (tvStatsCount != null) {
+                    tvStatsCount.setText(String.valueOf(myEvents.size()));
+                }
+                if (tvStatsDuration != null) {
+                    tvStatsDuration.setText(totalDuration + "h");
+                }
             }
 
             @Override

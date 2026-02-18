@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,8 +25,8 @@ public class RegisterUser extends AppCompatActivity {
     private EditText etFname, etLname, etPhone, etEmail, etPassword;
     private Button btnRegister;
     private TextView tvLogin;
+    private ImageButton btnBackMain; // הכפתור החדש
 
-    private FirebaseAuth mAuth;
     private DatabaseService databaseService;
 
     @Override
@@ -40,9 +41,7 @@ public class RegisterUser extends AppCompatActivity {
             return insets;
         });
 
-        mAuth = FirebaseAuth.getInstance();
         databaseService = DatabaseService.getInstance();
-
         initViews();
     }
 
@@ -54,11 +53,20 @@ public class RegisterUser extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
         btnRegister = findViewById(R.id.btn_register);
         tvLogin = findViewById(R.id.tv_login);
+        btnBackMain = findViewById(R.id.btn_back_main);
 
         btnRegister.setOnClickListener(v -> registerUser());
 
+        // תיקון הקישור: מעבר ישיר למסך התחברות
         tvLogin.setOnClickListener(v -> {
-            finish(); // חוזר למסך ההתחברות הקודם
+            Intent intent = new Intent(RegisterUser.this, Login.class);
+            startActivity(intent);
+            finish(); // סוגר את ההרשמה
+        });
+
+        // חזרה למסך הראשי
+        btnBackMain.setOnClickListener(v -> {
+            finish();
         });
     }
 
@@ -75,26 +83,19 @@ public class RegisterUser extends AppCompatActivity {
             return;
         }
 
-        mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                String uid = task.getResult().getUser().getUid();
-                User user = new User(uid, fname, lname, phone, email, password);
+        User user = new User("", fname, lname, phone, email, password);
 
-                databaseService.createNewUser(user, new DatabaseService.DatabaseCallback<Void>() {
-                    @Override
-                    public void onCompleted(Void object) {
-                        Toast.makeText(RegisterUser.this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(RegisterUser.this, HomePage.class));
-                        finish();
-                    }
+        databaseService.createNewUser(user, new DatabaseService.DatabaseCallback<String>() {
+            @Override
+            public void onCompleted(String uid) {
+                Toast.makeText(RegisterUser.this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(RegisterUser.this, HomePage.class));
+                finish();
+            }
 
-                    @Override
-                    public void onFailed(Exception e) {
-                        Toast.makeText(RegisterUser.this, "שגיאה בשמירת פרטים", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            } else {
-                Toast.makeText(RegisterUser.this, "שגיאה בהרשמה: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            @Override
+            public void onFailed(Exception e) {
+                Toast.makeText(RegisterUser.this, "שגיאה בהרשמה: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

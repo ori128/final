@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +23,7 @@ public class Login extends AppCompatActivity {
     private EditText etEmail, etPassword;
     private Button btnLogin;
     private TextView tvRegister;
+    private ImageButton btnBackMain; // הכפתור החדש
     private FirebaseAuth mAuth;
 
     @Override
@@ -45,12 +47,20 @@ public class Login extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
         btnLogin = findViewById(R.id.btn_login);
         tvRegister = findViewById(R.id.tv_register);
+        btnBackMain = findViewById(R.id.btn_back_main);
 
         btnLogin.setOnClickListener(v -> loginUser());
 
+        // תיקון הקישור: מעבר ישיר למסך הרשמה
         tvRegister.setOnClickListener(v -> {
             Intent intent = new Intent(Login.this, RegisterUser.class);
             startActivity(intent);
+            finish(); // סוגר את מסך ההתחברות כדי שלא יישאר פתוח ברקע
+        });
+
+        // כפתור חזרה למסך הראשי
+        btnBackMain.setOnClickListener(v -> {
+            finish();
         });
     }
 
@@ -65,7 +75,6 @@ public class Login extends AppCompatActivity {
 
         mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                // בדיקה אם זה אדמין או משתמש רגיל (לפי הלוגיקה המקורית שלך)
                 if (email.equals("admin@gmail.com")) {
                     startActivity(new Intent(Login.this, MainAdmin.class));
                 } else {
