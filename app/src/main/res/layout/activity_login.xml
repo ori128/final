@@ -1,103 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/loginLayout"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FAFAFA">
+    android:background="#F3F4F6">
 
-    <!-- כותרת -->
+    <View
+        android:id="@+id/view_header"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"
+        android:background="#3B82F6"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
-        android:id="@+id/title"
+        android:id="@+id/tv_welcome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="התחברות"
-        android:textSize="26sp"
-        android:textColor="#222222"
+        android:layout_marginTop="64dp"
+        android:text="ברוכים הבאים"
+        android:textColor="#FFFFFF"
+        android:textSize="32sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="90dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- תיבה לבנה עם השדות -->
-    <LinearLayout
-        android:id="@+id/box"
-        android:layout_width="0dp"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:background="#FFFFFF"
-        android:elevation="3dp"
-        android:layout_marginStart="30dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginTop="30dp"
-        android:paddingTop="30dp"
-        android:paddingBottom="30dp"
-        android:clipToOutline="true"
-        android:outlineProvider="background"
-        app:layout_constraintTop_toBottomOf="@id/title"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:text="התחבר כדי להמשיך"
+        android:textColor="#E0E7FF"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="@+id/tv_welcome"
+        app:layout_constraintStart_toStartOf="@+id/tv_welcome"
+        app:layout_constraintTop_toBottomOf="@+id/tv_welcome" />
 
-        <!-- שם משתמש / אימייל -->
-        <EditText
-            android:id="@+id/etEmail"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginTop="32dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_welcome"
+        app:layout_constraintVertical_bias="0.3">
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="אימייל"
-            android:gravity="right"
-            android:padding="10dp"
-            android:background="#F1F1F1"
-            android:textColor="#222222"
-            android:textColorHint="#999999" />
-
-        <!-- סיסמה -->
-        <EditText
-            android:id="@+id/etPassword"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="סיסמה"
-            android:inputType="textPassword"
-            android:gravity="right"
-            android:padding="10dp"
-            android:background="#F1F1F1"
-            android:layout_marginTop="16dp"
-            android:textColor="#222222"
-            android:textColorHint="#999999" />
-
-        <!-- כפתור התחברות -->
-        <Button
-            android:id="@+id/btnLogin"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="התחברות"
-            android:layout_marginTop="24dp"
-            android:textColor="#FFFFFF"
-            android:background="#3B82F6" />
-
-        <!-- אין לך משתמש? -->
-        <TextView
-            android:id="@+id/noAccount"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="אין לך משתמש? לחץ כאן להרשמה"
-            android:textColor="#3B82F6"
-            android:textSize="14sp"
-            android:layout_marginTop="16dp"
-            android:gravity="center"
-            android:padding="4dp" />
+            android:orientation="vertical"
+            android:padding="24dp">
 
-        <!-- כפתור חזרה לעמוד הראשי -->
-        <Button
-            android:id="@+id/btnBackMain"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="חזרה לעמוד הראשי"
-            android:layout_marginTop="24dp"
-            android:textColor="#FFFFFF"
-            android:background="#EF4444" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="התחברות"
+                android:textColor="#1F2937"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
-    </LinearLayout>
+            <EditText
+                android:id="@+id/et_email"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/ic_launcher_background"
+                android:backgroundTint="#F3F4F6"
+                android:hint="אימייל"
+                android:inputType="textEmailAddress"
+                android:paddingHorizontal="16dp"
+                android:textColor="#111827"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/et_password"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/ic_launcher_background"
+                android:backgroundTint="#F3F4F6"
+                android:hint="סיסמה"
+                android:inputType="textPassword"
+                android:paddingHorizontal="16dp"
+                android:textColor="#111827"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btn_login"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:backgroundTint="#3B82F6"
+                android:text="התחבר"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="12dp" />
+
+            <TextView
+                android:id="@+id/tv_register"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:text="אין לך משתמש? הירשם כאן"
+                android:textColor="#3B82F6"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

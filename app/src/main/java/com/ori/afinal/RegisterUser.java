@@ -1,10 +1,8 @@
 package com.ori.afinal;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,23 +19,14 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.model.User;
 
-import java.util.Objects;
+public class RegisterUser extends AppCompatActivity {
 
-public class RegisterUser extends AppCompatActivity implements View.OnClickListener {
+    private EditText etFname, etLname, etPhone, etEmail, etPassword;
+    private Button btnRegister;
+    private TextView tvLogin;
 
-    private static final String TAG = "Register";
-
-    EditText etFname, etLname, etMail, etPhone, etPassword;
-    String fName, lName, email, phone, password;
-
-    Button btnSubmit;
-    TextView tvRegisterLogin;
-
-    private DatabaseService databaseService;
     private FirebaseAuth mAuth;
-
-    public static final String MyPREFERENCES = "MyPrefs";
-    SharedPreferences sharedpreferences;
+    private DatabaseService databaseService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,84 +40,61 @@ public class RegisterUser extends AppCompatActivity implements View.OnClickListe
             return insets;
         });
 
-        sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
-
-        databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
+        databaseService = DatabaseService.getInstance();
 
-        etFname = findViewById(R.id.et_register_first_name);
-        etLname = findViewById(R.id.et_register_last_name);
-        etMail = findViewById(R.id.et_register_email);
-        etPhone = findViewById(R.id.et_register_phone);
-        etPassword = findViewById(R.id.et_register_password);
+        initViews();
+    }
 
-        btnSubmit = findViewById(R.id.btn_register_register);
-        tvRegisterLogin = findViewById(R.id.tv_register_login);
+    private void initViews() {
+        etFname = findViewById(R.id.et_fname);
+        etLname = findViewById(R.id.et_lname);
+        etPhone = findViewById(R.id.et_phone);
+        etEmail = findViewById(R.id.et_email);
+        etPassword = findViewById(R.id.et_password);
+        btnRegister = findViewById(R.id.btn_register);
+        tvLogin = findViewById(R.id.tv_login);
 
-        btnSubmit.setOnClickListener(this);
+        btnRegister.setOnClickListener(v -> registerUser());
 
-        // 👉 מעבר למסך התחברות
-        tvRegisterLogin.setOnClickListener(v -> {
-            Intent intent = new Intent(RegisterUser.this, Login.class);
-            startActivity(intent);
-            finish();
+        tvLogin.setOnClickListener(v -> {
+            finish(); // חוזר למסך ההתחברות הקודם
         });
     }
 
-    @Override
-    public void onClick(View v) {
-        if (v.getId() == btnSubmit.getId()) {
-            Log.d(TAG, "Register button clicked");
+    private void registerUser() {
+        String fname = etFname.getText().toString();
+        String lname = etLname.getText().toString();
+        String phone = etPhone.getText().toString();
+        String email = etEmail.getText().toString();
+        String password = etPassword.getText().toString();
 
-            fName = etFname.getText().toString().trim();
-            lName = etLname.getText().toString().trim();
-            email = etMail.getText().toString().trim();
-            phone = etPhone.getText().toString().trim();
-            password = etPassword.getText().toString().trim();
-
-            registerUser(fName, lName, phone, email, password);
+        if (TextUtils.isEmpty(fname) || TextUtils.isEmpty(lname) ||
+                TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
+            Toast.makeText(this, "אנא מלא את כל השדות", Toast.LENGTH_SHORT).show();
+            return;
         }
-    }
 
-    private void registerUser(String fname, String lname, String phone, String email, String password) {
-        Log.d(TAG, "registerUser: Registering user");
+        mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                String uid = task.getResult().getUser().getUid();
+                User user = new User(uid, fname, lname, phone, email, password);
 
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) {
-                        Log.e(TAG, "Auth failed", task.getException());
-                        Toast.makeText(this, "Authentication failed", Toast.LENGTH_SHORT).show();
-                        return;
+                databaseService.createNewUser(user, new DatabaseService.DatabaseCallback<Void>() {
+                    @Override
+                    public void onCompleted(Void object) {
+                        Toast.makeText(RegisterUser.this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(RegisterUser.this, HomePage.class));
+                        finish();
                     }
 
-                    String uid = Objects.requireNonNull(mAuth.getCurrentUser()).getUid();
-                    boolean isAdmin = false;
-
-                    User user = new User(uid, fname, lname, phone, email, password, isAdmin);
-                    createUserInDatabase(user);
+                    @Override
+                    public void onFailed(Exception e) {
+                        Toast.makeText(RegisterUser.this, "שגיאה בשמירת פרטים", Toast.LENGTH_SHORT).show();
+                    }
                 });
-    }
-
-    private void createUserInDatabase(User user) {
-        databaseService.createNewUser2(user, new DatabaseService.DatabaseCallback<Void>() {
-            @Override
-            public void onCompleted(Void object) {
-                Log.d(TAG, "User created successfully");
-
-                SharedPreferences.Editor editor = sharedpreferences.edit();
-                editor.putString("email", email);
-                editor.putString("password", password);
-                editor.apply();
-
-                Intent intent = new Intent(RegisterUser.this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-            }
-
-            @Override
-            public void onFailed(Exception e) {
-                Log.e(TAG, "Failed to create user", e);
-                Toast.makeText(RegisterUser.this, "Failed to register user", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(RegisterUser.this, "שגיאה בהרשמה: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
