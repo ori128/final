@@ -63,6 +63,37 @@
                         android:paddingHorizontal="16dp"
                         android:textSize="14sp" />
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="סוג הפגישה:"
+                        android:textColor="#6B7280"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_meeting_type"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/rb_physical"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="16dp"
+                            android:checked="true"
+                            android:text="פגישה פיזית" />
+
+                        <RadioButton
+                            android:id="@+id/rb_online"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="פגישה מקוונת (Online)" />
+                    </RadioGroup>
+
                     <EditText
                         android:id="@+id/et_location"
                         android:layout_width="match_parent"
@@ -70,9 +101,93 @@
                         android:layout_marginBottom="16dp"
                         android:background="@drawable/ic_launcher_background"
                         android:backgroundTint="#F3F4F6"
+                        android:drawableStart="@android:drawable/ic_menu_mylocation"
+                        android:drawablePadding="8dp"
                         android:hint="מיקום"
                         android:paddingHorizontal="16dp"
                         android:textSize="14sp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:endIconMode="none"
+                        app:hintEnabled="false">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_date_picker"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:background="@drawable/ic_launcher_background"
+                            android:backgroundTint="#F3F4F6"
+                            android:clickable="true"
+                            android:drawableStart="@android:drawable/ic_menu_my_calendar"
+                            android:drawablePadding="8dp"
+                            android:focusable="false"
+                            android:hint="בחר תאריך"
+                            android:inputType="none"
+                            android:paddingHorizontal="16dp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_start_time"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/ic_launcher_background"
+                            android:backgroundTint="#F3F4F6"
+                            android:clickable="true"
+                            android:drawableStart="@android:drawable/ic_menu_recent_history"
+                            android:drawablePadding="8dp"
+                            android:focusable="false"
+                            android:hint="התחלה"
+                            android:inputType="none"
+                            android:paddingHorizontal="16dp" />
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_end_time"
+                            android:layout_width="0dp"
+                            android:layout_height="50dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/ic_launcher_background"
+                            android:backgroundTint="#F3F4F6"
+                            android:clickable="true"
+                            android:drawableStart="@android:drawable/ic_menu_recent_history"
+                            android:drawablePadding="8dp"
+                            android:focusable="false"
+                            android:hint="סיום"
+                            android:inputType="none"
+                            android:paddingHorizontal="16dp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btn_add_participants"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginBottom="8dp"
+                        android:backgroundTint="#E0E7FF"
+                        android:text="הוסף משתתפים +"
+                        android:textColor="#3B82F6"
+                        app:cornerRadius="12dp"
+                        app:icon="@android:drawable/ic_input_add"
+                        app:iconTint="#3B82F6" />
+
+                    <TextView
+                        android:id="@+id/tv_participants_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="אף משתתף לא נבחר"
+                        android:textColor="#6B7280"
+                        android:textSize="12sp" />
 
                     <EditText
                         android:id="@+id/et_description"
@@ -86,43 +201,13 @@
                         android:padding="16dp"
                         android:textSize="14sp" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <EditText
-                            android:id="@+id/et_date"
-                            android:layout_width="0dp"
-                            android:layout_height="50dp"
-                            android:layout_marginEnd="8dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/ic_launcher_background"
-                            android:backgroundTint="#F3F4F6"
-                            android:hint="תאריך (DD/MM/YYYY)"
-                            android:paddingHorizontal="16dp"
-                            android:textSize="14sp" />
-
-                        <EditText
-                            android:id="@+id/et_time"
-                            android:layout_width="0dp"
-                            android:layout_height="50dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/ic_launcher_background"
-                            android:backgroundTint="#F3F4F6"
-                            android:hint="שעה (HH:MM)"
-                            android:paddingHorizontal="16dp"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
                     <Button
                         android:id="@+id/btn_save_event"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:layout_marginTop="32dp"
+                        android:layout_marginTop="16dp"
                         android:backgroundTint="#3B82F6"
-                        android:text="שמור פגישה"
+                        android:text="צור פגישה"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp" />
@@ -136,7 +221,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:backgroundTint="#EF4444"
-                android:text="ביטול וחזרה"
+                android:text="ביטול"
                 app:cornerRadius="20dp" />
 
         </LinearLayout>
