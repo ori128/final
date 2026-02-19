@@ -33,6 +33,21 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="#FFFFFF" />
 
+        <ImageButton
+            android:id="@+id/btn_notifications"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="התראות"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_popup_reminder"
+            app:layout_constraintEnd_toStartOf="@+id/btn_logout"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#FFFFFF" />
+
         <TextView
             android:id="@+id/tv_greeting"
             android:layout_width="wrap_content"

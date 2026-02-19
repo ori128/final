@@ -71,23 +71,20 @@ public class AddEvent extends AppCompatActivity {
         selectedDate = Calendar.getInstance();
 
         setupPickers();
-        setupRadioGroupListener(); // הפעלת המאזין לסוג הפגישה
+        setupRadioGroupListener();
 
         btnSaveEvent.setOnClickListener(v -> createEvent());
-
         btnBack.setOnClickListener(v -> finish());
 
-        // לוגיקת בחירת משתתפים להזמנה
         btnAddParticipants.setOnClickListener(v -> {
             databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
                 @Override
                 public void onCompleted(List<User> users) {
                     if (users == null || users.isEmpty()) {
-                        Toast.makeText(AddEvent.this, "אין משתמשים במערכת להזמנה", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(AddEvent.this, "אין משתמשים במערכת", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    // סינון המשתמש הנוכחי מהרשימה (כדי שלא יזמין את עצמו)
                     List<User> otherUsers = new ArrayList<>();
                     String currentUserId = mAuth.getCurrentUser().getUid();
                     for (User u : users) {
@@ -96,32 +93,20 @@ public class AddEvent extends AppCompatActivity {
                         }
                     }
 
-                    if (otherUsers.isEmpty()) {
-                        Toast.makeText(AddEvent.this, "אין משתמשים נוספים להזמנה", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
                     String[] userNames = new String[otherUsers.size()];
                     boolean[] checkedItems = new boolean[otherUsers.size()];
 
                     for (int i = 0; i < otherUsers.size(); i++) {
-                        String fname = otherUsers.get(i).getFname() != null ? otherUsers.get(i).getFname() : "";
-                        userNames[i] = fname.trim();
-                        if (userNames[i].isEmpty()) {
-                            userNames[i] = "משתמש ללא שם";
-                        }
+                        userNames[i] = otherUsers.get(i).getFname() != null ? otherUsers.get(i).getFname() : "משתמש";
                         checkedItems[i] = selectedParticipantIds.contains(otherUsers.get(i).getId());
                     }
 
-                    // דיאלוג בחירה מרובה (עיצוב מובנה של האנדרואיד)
                     new AlertDialog.Builder(AddEvent.this)
                             .setTitle("בחר משתתפים להזמנה")
                             .setMultiChoiceItems(userNames, checkedItems, (dialog, which, isChecked) -> {
                                 String selectedId = otherUsers.get(which).getId();
                                 if (isChecked) {
-                                    if (!selectedParticipantIds.contains(selectedId)) {
-                                        selectedParticipantIds.add(selectedId);
-                                    }
+                                    if (!selectedParticipantIds.contains(selectedId)) selectedParticipantIds.add(selectedId);
                                 } else {
                                     selectedParticipantIds.remove(selectedId);
                                 }
@@ -141,15 +126,12 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
-    // פונקציה שמאזינה לבחירת סוג הפגישה בזמן אמת - כאן בוצע התיקון המרכזי
     private void setupRadioGroupListener() {
         radioGroupType.setOnCheckedChangeListener((group, checkedId) -> {
-            // אנחנו בודקים לפי ה-ID של כפתור האונליין כפי שמוגדר אצלך ב-XML
             if (checkedId == R.id.rb_online) {
                 etLocation.setText("Online");
-                etLocation.setEnabled(false); // נועל את שדה המיקום
+                etLocation.setEnabled(false);
             } else {
-                // אם חזר לפגישה רגילה, ננקה את השדה ונפתח לעריכה
                 if (etLocation.getText().toString().equals("Online")) {
                     etLocation.setText("");
                 }
@@ -164,9 +146,7 @@ public class AddEvent extends AppCompatActivity {
                     .setTitleText("בחר תאריך")
                     .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
                     .build();
-
             datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
-
             datePicker.addOnPositiveButtonClickListener(selection -> {
                 selectedDate.setTimeInMillis(selection);
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -177,32 +157,20 @@ public class AddEvent extends AppCompatActivity {
         etStartTime.setOnClickListener(v -> {
             MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
-                    .setHour(12)
-                    .setMinute(0)
-                    .setTitleText("בחר שעת התחלה")
-                    .build();
-
-            timePicker.show(getSupportFragmentManager(), "START_TIME_PICKER");
-
+                    .setHour(12).setMinute(0).setTitleText("שעת התחלה").build();
+            timePicker.show(getSupportFragmentManager(), "START_TIME");
             timePicker.addOnPositiveButtonClickListener(t -> {
-                String time = String.format(Locale.getDefault(), "%02d:%02d", timePicker.getHour(), timePicker.getMinute());
-                etStartTime.setText(time);
+                etStartTime.setText(String.format(Locale.getDefault(), "%02d:%02d", timePicker.getHour(), timePicker.getMinute()));
             });
         });
 
         etEndTime.setOnClickListener(v -> {
             MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
-                    .setHour(13)
-                    .setMinute(0)
-                    .setTitleText("בחר שעת סיום")
-                    .build();
-
-            timePicker.show(getSupportFragmentManager(), "END_TIME_PICKER");
-
+                    .setHour(13).setMinute(0).setTitleText("שעת סיום").build();
+            timePicker.show(getSupportFragmentManager(), "END_TIME");
             timePicker.addOnPositiveButtonClickListener(t -> {
-                String time = String.format(Locale.getDefault(), "%02d:%02d", timePicker.getHour(), timePicker.getMinute());
-                etEndTime.setText(time);
+                etEndTime.setText(String.format(Locale.getDefault(), "%02d:%02d", timePicker.getHour(), timePicker.getMinute()));
             });
         });
     }
@@ -222,7 +190,6 @@ public class AddEvent extends AppCompatActivity {
         RadioButton selectedRadio = findViewById(selectedId);
         String type = selectedRadio.getText().toString();
 
-        // מוודא שגם בעת השמירה המיקום מעודכן במקרה של אונליין
         if (selectedId == R.id.rb_online) {
             location = "Online";
         }
@@ -254,16 +221,21 @@ public class AddEvent extends AppCompatActivity {
                 admin
         );
 
-        if (!selectedParticipantIds.contains(uid)) {
-            selectedParticipantIds.add(uid);
+        if (selectedParticipantIds.contains(uid)) {
+            selectedParticipantIds.remove(uid);
         }
-        event.setParticipantIds(selectedParticipantIds);
+
+        event.setInvitedParticipantIds(selectedParticipantIds);
+
+        List<String> acceptedList = new ArrayList<>();
+        acceptedList.add(uid);
+        event.setParticipantIds(acceptedList);
 
         databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
                 Log.d(TAG, "Event created successfully");
-                Toast.makeText(AddEvent.this, "הפגישה נוצרה בהצלחה", Toast.LENGTH_SHORT).show();
+                Toast.makeText(AddEvent.this, "הפגישה נוצרה וההזמנות נשלחו", Toast.LENGTH_SHORT).show();
                 finish();
             }
 

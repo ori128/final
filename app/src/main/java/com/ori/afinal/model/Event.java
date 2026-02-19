@@ -14,12 +14,14 @@ public class Event {
     private String status;   // ACTIVE / CANCELED / FINISHED
     private int maxNumOfParticipants;
     private User eventAdmin;
-    private List<String> participantIds; // הוספנו רשימת משתתפים
+    private List<String> participantIds; // משתתפים שאישרו
+    private List<String> invitedParticipantIds; // מוזמנים שטרם אישרו (חדש)
 
     // חובה ל-Firebase
     public Event() {
         this.status = "ACTIVE";
         this.participantIds = new ArrayList<>();
+        this.invitedParticipantIds = new ArrayList<>();
     }
 
     // קונסטרקטור ליצירת אירוע חדש
@@ -42,6 +44,7 @@ public class Event {
         this.eventAdmin = eventAdmin;
         this.status = "ACTIVE";
         this.participantIds = new ArrayList<>();
+        this.invitedParticipantIds = new ArrayList<>();
     }
 
     // --- GETTERS & SETTERS ---
@@ -75,6 +78,9 @@ public class Event {
     public List<String> getParticipantIds() { return participantIds; }
     public void setParticipantIds(List<String> participantIds) { this.participantIds = participantIds; }
 
+    public List<String> getInvitedParticipantIds() { return invitedParticipantIds; }
+    public void setInvitedParticipantIds(List<String> invitedParticipantIds) { this.invitedParticipantIds = invitedParticipantIds; }
+
     @Override
     public String toString() {
         return "Event{" +
@@ -88,6 +94,7 @@ public class Event {
                 ", maxNumOfParticipants=" + maxNumOfParticipants +
                 ", eventAdmin=" + eventAdmin +
                 ", participantIds=" + participantIds +
+                ", invitedParticipantIds=" + invitedParticipantIds +
                 '}';
     }
 }

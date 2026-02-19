@@ -231,6 +231,10 @@ public class DatabaseService {
         writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
     }
 
+    public void updateEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
+        writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
+    }
+
     public void getEvent(@NotNull final String eventId, @NotNull final DatabaseCallback<Event> callback) {
         getData(EVENTS_PATH + "/" + eventId, Event.class, callback);
     }
@@ -239,19 +243,17 @@ public class DatabaseService {
         getDataList(EVENTS_PATH, Event.class, callback);
     }
 
-    /// מתודה חדשה - מחזירה רק פגישות שהמשתמש יצר או שהוא נמצא ברשימת המוזמנים
+    // מתודה מעודכנת - מביאה פגישות שהמשתמש הוא היוצר שלהן או שהוא אישר הגעה
     public void getUserEvents(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
         getDataList(EVENTS_PATH, Event.class, new DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> allEvents) {
                 List<Event> userEvents = new ArrayList<>();
                 for (Event event : allEvents) {
-                    // בדיקה האם המשתמש הוא יוצר הפגישה
                     boolean isCreator = event.getEventAdmin() != null && userId.equals(event.getEventAdmin().getId());
-                    // בדיקה האם המשתמש ברשימת המוזמנים
-                    boolean isInvited = event.getParticipantIds() != null && event.getParticipantIds().contains(userId);
+                    boolean isAccepted = event.getParticipantIds() != null && event.getParticipantIds().contains(userId);
 
-                    if (isCreator || isInvited) {
+                    if (isCreator || isAccepted) {
                         userEvents.add(event);
                     }
                 }
@@ -261,6 +263,58 @@ public class DatabaseService {
             @Override
             public void onFailed(Exception e) {
                 callback.onFailed(e);
+            }
+        });
+    }
+
+    // מתודה חדשה - מביאה רק פגישות שאליהן המשתמש הוזמן (התראות)
+    public void getUserNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
+        getDataList(EVENTS_PATH, Event.class, new DatabaseCallback<List<Event>>() {
+            @Override
+            public void onCompleted(List<Event> allEvents) {
+                List<Event> pendingEvents = new ArrayList<>();
+                for (Event event : allEvents) {
+                    if (event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId)) {
+                        pendingEvents.add(event);
+                    }
+                }
+                callback.onCompleted(pendingEvents);
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                callback.onFailed(e);
+            }
+        });
+    }
+
+    // מתודה חדשה - מענה על הזמנה (אישור או דחייה)
+    public void respondToInvitation(String eventId, String userId, boolean isAccepted, DatabaseCallback<Void> callback) {
+        getEvent(eventId, new DatabaseCallback<Event>() {
+            @Override
+            public void onCompleted(Event event) {
+                if (event != null) {
+                    // הסרה מרשימת המוזמנים
+                    if (event.getInvitedParticipantIds() != null) {
+                        event.getInvitedParticipantIds().remove(userId);
+                    }
+                    // אם אישר - הוספה לרשימת המשתתפים
+                    if (isAccepted) {
+                        if (event.getParticipantIds() == null) {
+                            event.setParticipantIds(new ArrayList<>());
+                        }
+                        if (!event.getParticipantIds().contains(userId)) {
+                            event.getParticipantIds().add(userId);
+                        }
+                    }
+                    // שמירת העדכון במסד הנתונים
+                    updateEvent(event, callback);
+                }
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                if (callback != null) callback.onFailed(e);
             }
         });
     }

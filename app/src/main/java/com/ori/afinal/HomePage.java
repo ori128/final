@@ -1,16 +1,12 @@
 package com.ori.afinal;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -35,7 +31,7 @@ public class HomePage extends AppCompatActivity {
     private TextView tvGreeting, tvStatsCount, tvStatsDuration;
     private RecyclerView rvEvents;
     private FloatingActionButton fabAddEvent;
-    private ImageButton btnLogout;
+    private ImageButton btnLogout, btnNotifications; // הוספנו את כפתור ההתראות
 
     private EventAdapter eventAdapter;
     private DatabaseService databaseService;
@@ -76,6 +72,7 @@ public class HomePage extends AppCompatActivity {
         fabAddEvent = findViewById(R.id.fab_add_event);
         rvEvents = findViewById(R.id.rv_events);
         btnLogout = findViewById(R.id.btn_logout);
+        btnNotifications = findViewById(R.id.btn_notifications); // קישור לעיצוב
 
         if (rvEvents != null) {
             rvEvents.setLayoutManager(new LinearLayoutManager(this));
@@ -92,6 +89,14 @@ public class HomePage extends AppCompatActivity {
 
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
+        }
+
+        // לחיצה על כפתור הפעמון
+        if (btnNotifications != null) {
+            btnNotifications.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePage.this, NotificationsActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
@@ -127,7 +132,6 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void loadEventsData() {
-        // שימוש בפונקציה getUserEvents המציגה רק אירועים שנוצרו על ידי או שהוזמנתי אליהם
         databaseService.getUserEvents(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> events) {

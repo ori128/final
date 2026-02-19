@@ -1,11 +1,15 @@
 package com.ori.afinal.adapter;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.ori.afinal.EventDetails; // ייבוא של העמוד החדש
 import com.ori.afinal.R;
 import com.ori.afinal.model.Event;
 import java.util.ArrayList;
@@ -52,6 +56,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvTime.setText("");
             }
         }
+
+        // הוספת מאזין ללחיצה על פריט הפגישה מהרשימה
+        holder.itemView.setOnClickListener(v -> {
+            Context context = v.getContext();
+            Intent intent = new Intent(context, EventDetails.class);
+            // העברת ה-ID של הפגישה הספציפית לעמוד פרטי הפגישה
+            intent.putExtra("EVENT_ID", event.getId());
+            context.startActivity(intent);
+        });
     }
 
     @Override
