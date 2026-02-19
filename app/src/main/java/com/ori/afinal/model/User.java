@@ -14,7 +14,7 @@ public class User {
     }
 
     public void setAdmin(Boolean admin) {
-        admin = admin;
+        this.admin = admin; // תוקן באג השמה
     }
 
     public User(String id, String fname, String lname, String phone, String email, String password, Boolean admin) {
@@ -44,8 +44,9 @@ public class User {
         this.fname = fname;
         this.lname = lname;
     }
+
     public String getFullName (){
-        return (fname+" "+lname);
+        return (fname + " " + lname);
     }
 
     public String getId() {
@@ -96,7 +97,6 @@ public class User {
         this.password = password;
     }
 
-
     @Override
     public String toString() {
         return "User{" +
@@ -110,6 +110,6 @@ public class User {
     }
 
     public void setUid(String uid) {
+        this.id = uid; // תוקן באג: הפונקציה הייתה ריקה מקודם
     }
 }
-
