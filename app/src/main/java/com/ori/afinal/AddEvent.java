@@ -49,7 +49,7 @@ public class AddEvent extends AppCompatActivity {
 
     private List<User> allUsers = new ArrayList<>();
     private List<String> selectedUserIds = new ArrayList<>();
-    private boolean[] selectedUsersState; // מערך בוליאני לדיאלוג הבחירה
+    private boolean[] selectedUsersState; // 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
