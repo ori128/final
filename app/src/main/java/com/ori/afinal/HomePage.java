@@ -35,7 +35,7 @@ public class HomePage extends AppCompatActivity {
     private TextView tvGreeting, tvStatsCount, tvStatsDuration;
     private RecyclerView rvEvents;
     private FloatingActionButton fabAddEvent;
-    private ImageButton btnLogout; // הוספנו את כפתור ההתנתקות
+    private ImageButton btnLogout;
 
     private EventAdapter eventAdapter;
     private DatabaseService databaseService;
@@ -75,9 +75,8 @@ public class HomePage extends AppCompatActivity {
         tvStatsDuration = findViewById(R.id.tv_stats_duration);
         fabAddEvent = findViewById(R.id.fab_add_event);
         rvEvents = findViewById(R.id.rv_events);
-        btnLogout = findViewById(R.id.btn_logout); // קישור הכפתור מה-XML
+        btnLogout = findViewById(R.id.btn_logout);
 
-        // הגדרת ה-RecyclerView
         if (rvEvents != null) {
             rvEvents.setLayoutManager(new LinearLayoutManager(this));
             eventAdapter = new EventAdapter();
@@ -91,7 +90,6 @@ public class HomePage extends AppCompatActivity {
             });
         }
 
-        // לוגיקה להתנתקות
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
@@ -102,10 +100,7 @@ public class HomePage extends AppCompatActivity {
                 .setTitle("התנתקות")
                 .setMessage("האם אתה בטוח שברצונך להתנתק?")
                 .setPositiveButton("כן, התנתק", (dialog, which) -> {
-                    // ביצוע התנתקות
                     mAuth.signOut();
-
-                    // מעבר למסך הראשי (MainActivity)
                     Intent intent = new Intent(HomePage.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
@@ -132,7 +127,8 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void loadEventsData() {
-        databaseService.getEventList(new DatabaseService.DatabaseCallback<List<Event>>() {
+        // שימוש בפונקציה getUserEvents המציגה רק אירועים שנוצרו על ידי או שהוזמנתי אליהם
+        databaseService.getUserEvents(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> events) {
                 if (events == null) return;

@@ -9,6 +9,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -21,7 +22,9 @@ import com.ori.afinal.model.Event;
 import com.ori.afinal.model.User;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 public class AddEvent extends AppCompatActivity {
@@ -39,6 +42,9 @@ public class AddEvent extends AppCompatActivity {
 
     private Calendar selectedDate;
 
+    // רשימה לשמירת המזהים של המשתתפים שנבחרו
+    private List<String> selectedParticipantIds = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,7 +53,6 @@ public class AddEvent extends AppCompatActivity {
         databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
-        // קישור הרכיבים בדיוק לפי ה-IDs של קובץ ה-XML החדש שלך
         etTitle = findViewById(R.id.et_title);
         etLocation = findViewById(R.id.et_location);
         etDescription = findViewById(R.id.et_description);
@@ -66,19 +71,94 @@ public class AddEvent extends AppCompatActivity {
         selectedDate = Calendar.getInstance();
 
         setupPickers();
+        setupRadioGroupListener(); // הפעלת המאזין לסוג הפגישה
 
-        // מאזינים ללחיצות כפתורים
         btnSaveEvent.setOnClickListener(v -> createEvent());
 
-        btnBack.setOnClickListener(v -> finish()); // כפתור ביטול חזר אחורה
+        btnBack.setOnClickListener(v -> finish());
 
+        // לוגיקת בחירת משתתפים להזמנה
         btnAddParticipants.setOnClickListener(v -> {
-            Toast.makeText(this, "הוספת משתתפים תתווסף בהמשך", Toast.LENGTH_SHORT).show();
+            databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
+                @Override
+                public void onCompleted(List<User> users) {
+                    if (users == null || users.isEmpty()) {
+                        Toast.makeText(AddEvent.this, "אין משתמשים במערכת להזמנה", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // סינון המשתמש הנוכחי מהרשימה (כדי שלא יזמין את עצמו)
+                    List<User> otherUsers = new ArrayList<>();
+                    String currentUserId = mAuth.getCurrentUser().getUid();
+                    for (User u : users) {
+                        if (u.getId() != null && !u.getId().equals(currentUserId)) {
+                            otherUsers.add(u);
+                        }
+                    }
+
+                    if (otherUsers.isEmpty()) {
+                        Toast.makeText(AddEvent.this, "אין משתמשים נוספים להזמנה", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String[] userNames = new String[otherUsers.size()];
+                    boolean[] checkedItems = new boolean[otherUsers.size()];
+
+                    for (int i = 0; i < otherUsers.size(); i++) {
+                        String fname = otherUsers.get(i).getFname() != null ? otherUsers.get(i).getFname() : "";
+                        userNames[i] = fname.trim();
+                        if (userNames[i].isEmpty()) {
+                            userNames[i] = "משתמש ללא שם";
+                        }
+                        checkedItems[i] = selectedParticipantIds.contains(otherUsers.get(i).getId());
+                    }
+
+                    // דיאלוג בחירה מרובה (עיצוב מובנה של האנדרואיד)
+                    new AlertDialog.Builder(AddEvent.this)
+                            .setTitle("בחר משתתפים להזמנה")
+                            .setMultiChoiceItems(userNames, checkedItems, (dialog, which, isChecked) -> {
+                                String selectedId = otherUsers.get(which).getId();
+                                if (isChecked) {
+                                    if (!selectedParticipantIds.contains(selectedId)) {
+                                        selectedParticipantIds.add(selectedId);
+                                    }
+                                } else {
+                                    selectedParticipantIds.remove(selectedId);
+                                }
+                            })
+                            .setPositiveButton("אישור", (dialog, which) -> {
+                                tvParticipantsList.setText("נבחרו " + selectedParticipantIds.size() + " מוזמנים");
+                            })
+                            .setNegativeButton("ביטול", null)
+                            .show();
+                }
+
+                @Override
+                public void onFailed(Exception e) {
+                    Toast.makeText(AddEvent.this, "שגיאה בטעינת משתמשים", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    // פונקציה שמאזינה לבחירת סוג הפגישה בזמן אמת - כאן בוצע התיקון המרכזי
+    private void setupRadioGroupListener() {
+        radioGroupType.setOnCheckedChangeListener((group, checkedId) -> {
+            // אנחנו בודקים לפי ה-ID של כפתור האונליין כפי שמוגדר אצלך ב-XML
+            if (checkedId == R.id.rb_online) {
+                etLocation.setText("Online");
+                etLocation.setEnabled(false); // נועל את שדה המיקום
+            } else {
+                // אם חזר לפגישה רגילה, ננקה את השדה ונפתח לעריכה
+                if (etLocation.getText().toString().equals("Online")) {
+                    etLocation.setText("");
+                }
+                etLocation.setEnabled(true);
+            }
         });
     }
 
     private void setupPickers() {
-        // בחירת תאריך
         etDatePicker.setOnClickListener(v -> {
             MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
                     .setTitleText("בחר תאריך")
@@ -94,7 +174,6 @@ public class AddEvent extends AppCompatActivity {
             });
         });
 
-        // בחירת שעת התחלה
         etStartTime.setOnClickListener(v -> {
             MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
@@ -111,7 +190,6 @@ public class AddEvent extends AppCompatActivity {
             });
         });
 
-        // בחירת שעת סיום
         etEndTime.setOnClickListener(v -> {
             MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
@@ -136,7 +214,6 @@ public class AddEvent extends AppCompatActivity {
         String startTime = etStartTime.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
 
-        // סוג האירוע מה- RadioGroup
         int selectedId = radioGroupType.getCheckedRadioButtonId();
         if (selectedId == -1) {
             Toast.makeText(this, "אנא בחר סוג פגישה", Toast.LENGTH_SHORT).show();
@@ -145,12 +222,16 @@ public class AddEvent extends AppCompatActivity {
         RadioButton selectedRadio = findViewById(selectedId);
         String type = selectedRadio.getText().toString();
 
+        // מוודא שגם בעת השמירה המיקום מעודכן במקרה של אונליין
+        if (selectedId == R.id.rb_online) {
+            location = "Online";
+        }
+
         if (title.isEmpty() || date.isEmpty() || startTime.isEmpty() || type.isEmpty()) {
-            Toast.makeText(this, "אנא מלא את כל השדות החיוניים (כותרת, תאריך ושעת התחלה)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "אנא מלא את כל השדות החיוניים", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // חיבור של התאריך והשעה למחרוזת אחת שתתאים למסד הנתונים כפי שהגדרנו במודל
         String dateTime = date + " " + startTime;
 
         if (mAuth.getCurrentUser() == null) {
@@ -160,10 +241,8 @@ public class AddEvent extends AppCompatActivity {
 
         String uid = mAuth.getCurrentUser().getUid();
         User admin = new User();
-        admin.setUid(uid);
+        admin.setId(uid);
 
-        // יצירת האירוע עם כל השדות שהגדרנו במחלקה Event
-        // הערה: הגדרנו 0 בתור מספר המשתתפים המקסימלי זמנית, כיוון שהשדה לא קיים בעיצוב הנוכחי
         Event event = new Event(
                 databaseService.generateEventId(),
                 title,
@@ -174,6 +253,11 @@ public class AddEvent extends AppCompatActivity {
                 0,
                 admin
         );
+
+        if (!selectedParticipantIds.contains(uid)) {
+            selectedParticipantIds.add(uid);
+        }
+        event.setParticipantIds(selectedParticipantIds);
 
         databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
