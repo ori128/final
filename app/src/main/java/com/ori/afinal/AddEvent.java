@@ -46,7 +46,7 @@ public class AddEvent extends AppCompatActivity {
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
 
-    // משתנים לשמירת הנתונים שנבחרו
+
     private List<User> allUsers = new ArrayList<>();
     private List<String> selectedUserIds = new ArrayList<>();
     private boolean[] selectedUsersState; // מערך בוליאני לדיאלוג הבחירה
