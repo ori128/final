@@ -48,6 +48,32 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="#FFFFFF" />
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cv_notification_badge"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="#EF4444"
+            app:cardCornerRadius="9dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintEnd_toEndOf="@+id/btn_notifications"
+            app:layout_constraintTop_toTopOf="@+id/btn_notifications">
+
+            <TextView
+                android:id="@+id/tv_notification_badge_count"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="1"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
         <TextView
             android:id="@+id/tv_greeting"
             android:layout_width="wrap_content"

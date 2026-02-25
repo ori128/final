@@ -289,24 +289,33 @@ public class DatabaseService {
     }
 
     // מתודה חדשה - מענה על הזמנה (אישור או דחייה)
+// מתודה חדשה - מענה על הזמנה (אישור או דחייה)
     public void respondToInvitation(String eventId, String userId, boolean isAccepted, DatabaseCallback<Void> callback) {
         getEvent(eventId, new DatabaseCallback<Event>() {
             @Override
             public void onCompleted(Event event) {
                 if (event != null) {
-                    // הסרה מרשימת המוזמנים
+                    // הסרה מרשימת המוזמנים (טרם אישרו)
                     if (event.getInvitedParticipantIds() != null) {
                         event.getInvitedParticipantIds().remove(userId);
                     }
-                    // אם אישר - הוספה לרשימת המשתתפים
+
                     if (isAccepted) {
-                        if (event.getParticipantIds() == null) {
-                            event.setParticipantIds(new ArrayList<>());
-                        }
-                        if (!event.getParticipantIds().contains(userId)) {
-                            event.getParticipantIds().add(userId);
-                        }
+                        // הוספה למאשרים
+                        if (event.getParticipantIds() == null) event.setParticipantIds(new ArrayList<>());
+                        if (!event.getParticipantIds().contains(userId)) event.getParticipantIds().add(userId);
+
+                        // הסרה מדוחים (במקרה ששינה דעה)
+                        if (event.getDeclinedParticipantIds() != null) event.getDeclinedParticipantIds().remove(userId);
+                    } else {
+                        // הוספה לדוחים
+                        if (event.getDeclinedParticipantIds() == null) event.setDeclinedParticipantIds(new ArrayList<>());
+                        if (!event.getDeclinedParticipantIds().contains(userId)) event.getDeclinedParticipantIds().add(userId);
+
+                        // הסרה ממאשרים (במקרה ששינה דעה)
+                        if (event.getParticipantIds() != null) event.getParticipantIds().remove(userId);
                     }
+
                     // שמירת העדכון במסד הנתונים
                     updateEvent(event, callback);
                 }

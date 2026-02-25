@@ -9,7 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.ori.afinal.EventDetails; // ייבוא של העמוד החדש
+import com.ori.afinal.EventDetails;
 import com.ori.afinal.R;
 import com.ori.afinal.model.Event;
 import java.util.ArrayList;
@@ -27,7 +27,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // וודא שקובץ העיצוב item_event_dashboard.xml קיים בתיקיית layout
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_event_dashboard, parent, false);
         return new EventViewHolder(view);
     }
@@ -57,11 +56,20 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             }
         }
 
+        // חישוב כמות המשתתפים שאישרו לעומת סך המוזמנים
+        int accepted = event.getParticipantIds() != null ? event.getParticipantIds().size() : 0;
+        int pending = event.getInvitedParticipantIds() != null ? event.getInvitedParticipantIds().size() : 0;
+        int declined = event.getDeclinedParticipantIds() != null ? event.getDeclinedParticipantIds().size() : 0;
+
+        int totalInvited = accepted + pending + declined;
+
+        // הצגת הנתונים יחד עם אימוג'י של איש (מחליף צורך להוריד אייקון)
+        holder.tvParticipantsCount.setText("👤 " + accepted + "/" + totalInvited);
+
         // הוספת מאזין ללחיצה על פריט הפגישה מהרשימה
         holder.itemView.setOnClickListener(v -> {
             Context context = v.getContext();
             Intent intent = new Intent(context, EventDetails.class);
-            // העברת ה-ID של הפגישה הספציפית לעמוד פרטי הפגישה
             intent.putExtra("EVENT_ID", event.getId());
             context.startActivity(intent);
         });
@@ -73,7 +81,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
     static class EventViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvType, tvLocation, tvTime, tvDate;
+        TextView tvTitle, tvType, tvLocation, tvTime, tvDate, tvParticipantsCount;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -82,6 +90,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvLocation = itemView.findViewById(R.id.tv_event_location);
             tvTime = itemView.findViewById(R.id.tv_event_time);
             tvDate = itemView.findViewById(R.id.tv_event_date);
+            tvParticipantsCount = itemView.findViewById(R.id.tv_event_participants_count); // הקישור החדש
         }
     }
 }

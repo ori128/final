@@ -3,6 +3,7 @@ package com.ori.afinal;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -28,10 +29,11 @@ public class HomePage extends AppCompatActivity {
 
     private static final String TAG = "HomePage";
 
-    private TextView tvGreeting, tvStatsCount, tvStatsDuration;
+    private TextView tvGreeting, tvStatsCount, tvStatsDuration, tvNotificationBadgeCount;
+    private View cvNotificationBadge;
     private RecyclerView rvEvents;
     private FloatingActionButton fabAddEvent;
-    private ImageButton btnLogout, btnNotifications; // הוספנו את כפתור ההתראות
+    private ImageButton btnLogout, btnNotifications;
 
     private EventAdapter eventAdapter;
     private DatabaseService databaseService;
@@ -63,6 +65,7 @@ public class HomePage extends AppCompatActivity {
         initViews();
         loadUserData();
         loadEventsData();
+        loadNotificationsCount(); // טעינת כמות ההתראות על ההתחלה
     }
 
     private void initViews() {
@@ -72,7 +75,11 @@ public class HomePage extends AppCompatActivity {
         fabAddEvent = findViewById(R.id.fab_add_event);
         rvEvents = findViewById(R.id.rv_events);
         btnLogout = findViewById(R.id.btn_logout);
-        btnNotifications = findViewById(R.id.btn_notifications); // קישור לעיצוב
+        btnNotifications = findViewById(R.id.btn_notifications);
+
+        // הקישורים החדשים לעיגול ההתראות
+        cvNotificationBadge = findViewById(R.id.cv_notification_badge);
+        tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
 
         if (rvEvents != null) {
             rvEvents.setLayoutManager(new LinearLayoutManager(this));
@@ -91,7 +98,6 @@ public class HomePage extends AppCompatActivity {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
 
-        // לחיצה על כפתור הפעמון
         if (btnNotifications != null) {
             btnNotifications.setOnClickListener(v -> {
                 Intent intent = new Intent(HomePage.this, NotificationsActivity.class);
@@ -101,6 +107,8 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void showLogoutDialog() {
+        if (isFinishing() || isDestroyed()) return;
+
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("התנתקות")
                 .setMessage("האם אתה בטוח שברצונך להתנתק?")
@@ -119,6 +127,8 @@ public class HomePage extends AppCompatActivity {
         databaseService.getUser(currentUserId, new DatabaseService.DatabaseCallback<User>() {
             @Override
             public void onCompleted(User user) {
+                if (isFinishing() || isDestroyed()) return;
+
                 if (user != null && user.getFname() != null && tvGreeting != null) {
                     tvGreeting.setText("שלום, " + user.getFname());
                 }
@@ -135,6 +145,8 @@ public class HomePage extends AppCompatActivity {
         databaseService.getUserEvents(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> events) {
+                if (isFinishing() || isDestroyed()) return;
+
                 if (events == null) return;
 
                 List<Event> myEvents = new ArrayList<>();
@@ -164,9 +176,32 @@ public class HomePage extends AppCompatActivity {
         });
     }
 
+    // פונקציה חדשה שסופרת את כמות ההתראות הממתינות
+    private void loadNotificationsCount() {
+        databaseService.getUserNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
+            @Override
+            public void onCompleted(List<Event> pendingEvents) {
+                if (isFinishing() || isDestroyed()) return;
+
+                if (pendingEvents != null && !pendingEvents.isEmpty()) {
+                    cvNotificationBadge.setVisibility(View.VISIBLE);
+                    tvNotificationBadgeCount.setText(String.valueOf(pendingEvents.size()));
+                } else {
+                    cvNotificationBadge.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                Log.e(TAG, "Failed to load notifications count", e);
+            }
+        });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         loadEventsData();
+        loadNotificationsCount(); // עדכון ההתראות בכל פעם שחוזרים לעמוד!
     }
 }

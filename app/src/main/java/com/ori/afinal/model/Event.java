@@ -15,13 +15,15 @@ public class Event {
     private int maxNumOfParticipants;
     private User eventAdmin;
     private List<String> participantIds; // משתתפים שאישרו
-    private List<String> invitedParticipantIds; // מוזמנים שטרם אישרו (חדש)
+    private List<String> invitedParticipantIds; // מוזמנים שטרם אישרו
+    private List<String> declinedParticipantIds; // משתתפים שדחו הגעה (חדש!)
 
     // חובה ל-Firebase
     public Event() {
         this.status = "ACTIVE";
         this.participantIds = new ArrayList<>();
         this.invitedParticipantIds = new ArrayList<>();
+        this.declinedParticipantIds = new ArrayList<>();
     }
 
     // קונסטרקטור ליצירת אירוע חדש
@@ -45,6 +47,7 @@ public class Event {
         this.status = "ACTIVE";
         this.participantIds = new ArrayList<>();
         this.invitedParticipantIds = new ArrayList<>();
+        this.declinedParticipantIds = new ArrayList<>();
     }
 
     // --- GETTERS & SETTERS ---
@@ -63,6 +66,7 @@ public class Event {
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
+    public String Location() { return location; } // השארתי את הפונקציה למקרה שיש שימוש כזה
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
@@ -81,20 +85,6 @@ public class Event {
     public List<String> getInvitedParticipantIds() { return invitedParticipantIds; }
     public void setInvitedParticipantIds(List<String> invitedParticipantIds) { this.invitedParticipantIds = invitedParticipantIds; }
 
-    @Override
-    public String toString() {
-        return "Event{" +
-                "id='" + id + '\'' +
-                ", title='" + title + '\'' +
-                ", description='" + description + '\'' +
-                ", dateTime='" + dateTime + '\'' +
-                ", type='" + type + '\'' +
-                ", location='" + location + '\'' +
-                ", status='" + status + '\'' +
-                ", maxNumOfParticipants=" + maxNumOfParticipants +
-                ", eventAdmin=" + eventAdmin +
-                ", participantIds=" + participantIds +
-                ", invitedParticipantIds=" + invitedParticipantIds +
-                '}';
-    }
+    public List<String> getDeclinedParticipantIds() { return declinedParticipantIds; }
+    public void setDeclinedParticipantIds(List<String> declinedParticipantIds) { this.declinedParticipantIds = declinedParticipantIds; }
 }

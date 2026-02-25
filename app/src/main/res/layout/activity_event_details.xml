@@ -113,19 +113,17 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="משתתפים:"
+                        android:text="משתתפים (כל המוזמנים):"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#6B7280"
-                        android:layout_marginBottom="4dp"/>
+                        android:layout_marginBottom="8dp"/>
 
-                    <TextView
-                        android:id="@+id/tv_detail_participants"
+                    <LinearLayout
+                        android:id="@+id/ll_detail_participants"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="טוען משתתפים..."
-                        android:textSize="16sp"
-                        android:textColor="#1F2937"
+                        android:orientation="vertical"
                         android:layout_marginBottom="8dp"/>
 
                 </LinearLayout>
