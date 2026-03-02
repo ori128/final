@@ -159,12 +159,23 @@ public class DatabaseService {
         getData(USERS_PATH + "/" + uid, User.class, callback);
     }
 
+    public void getUserList(@NotNull final DatabaseCallback<List<User>> callback) {
+        getDataList(USERS_PATH, User.class, callback);
+    }
+
     public void getEventList(@NotNull final DatabaseCallback<List<Event>> callback) {
         getDataList(EVENTS_PATH, Event.class, callback);
     }
     // endregion
 
     // region Event Section
+    public void createNewEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
+        if (event.getId() == null || event.getId().isEmpty()) {
+            event.setId(generateEventId());
+        }
+        writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
+    }
+
     public void getUserEvents(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
         getEventList(new DatabaseCallback<List<Event>>() {
             @Override
@@ -182,7 +193,6 @@ public class DatabaseService {
         });
     }
 
-    // הפונקציה שהייתה חסרה וגרמה לשגיאה
     public void getUserNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
         getEventList(new DatabaseCallback<List<Event>>() {
             @Override
@@ -200,6 +210,28 @@ public class DatabaseService {
         });
     }
 
+    // ====== הפונקציה החדשה להתראות! ======
+    public void getSmartNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Notification>> callback) {
+        getDataList(NOTIFICATIONS_PATH, Notification.class, new DatabaseCallback<List<Notification>>() {
+            @Override
+            public void onCompleted(List<Notification> allNotifications) {
+                List<Notification> userNotifications = new ArrayList<>();
+                for (Notification notification : allNotifications) {
+                    // סינון ההתראות כך שנחזיר רק את ההתראות ששייכות למשתמש המחובר
+                    if (notification.getUserId() != null && notification.getUserId().equals(userId)) {
+                        userNotifications.add(notification);
+                    }
+                }
+                callback.onCompleted(userNotifications);
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                callback.onFailed(e);
+            }
+        });
+    }
+
     public void updateEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
         writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
     }
@@ -214,6 +246,41 @@ public class DatabaseService {
 
     public void sendNotification(@NotNull final Notification notification, @Nullable final DatabaseCallback<Void> callback) {
         writeData(NOTIFICATIONS_PATH + "/" + notification.getId(), notification, callback);
+    }
+
+    public void deleteNotification(@NotNull final String notificationId, @Nullable final DatabaseCallback<Void> callback) {
+        deleteData(NOTIFICATIONS_PATH + "/" + notificationId, callback);
+    }
+
+    public void respondToInvitation(@NotNull final String eventId, @NotNull final String userId, final boolean isAccepted, @Nullable final DatabaseCallback<Void> callback) {
+        getEvent(eventId, new DatabaseCallback<Event>() {
+            @Override
+            public void onCompleted(Event event) {
+                if (event != null) {
+                    if (event.getInvitedParticipantIds() != null) {
+                        event.getInvitedParticipantIds().remove(userId);
+                    }
+
+                    if (isAccepted) {
+                        if (event.getParticipantIds() == null) {
+                            event.setParticipantIds(new ArrayList<>());
+                        }
+                        if (!event.getParticipantIds().contains(userId)) {
+                            event.getParticipantIds().add(userId);
+                        }
+                    }
+
+                    updateEvent(event, callback);
+                } else if (callback != null) {
+                    callback.onFailed(new Exception("Event not found"));
+                }
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                if (callback != null) callback.onFailed(e);
+            }
+        });
     }
     // endregion
 }
