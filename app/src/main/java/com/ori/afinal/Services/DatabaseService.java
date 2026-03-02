@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.model.Event;
+import com.ori.afinal.model.Notification;
 import com.ori.afinal.model.User;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -19,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 public class DatabaseService {
@@ -28,7 +28,8 @@ public class DatabaseService {
 
     private static final String USERS_PATH = "users",
             EVENTS_PATH = "events",
-            CARTS_PATH = "carts";
+            CARTS_PATH = "carts",
+            NOTIFICATIONS_PATH = "notifications"; // הנתיב להתראות
 
     public interface DatabaseCallback<T> {
         public void onCompleted(T object);
@@ -50,7 +51,6 @@ public class DatabaseService {
         }
         return instance;
     }
-
 
     private void writeData(@NotNull final String path, @NotNull final Object data, final @Nullable DatabaseCallback<Void> callback) {
         readData(path).setValue(data, (error, ref) -> {
@@ -149,7 +149,6 @@ public class DatabaseService {
         mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        Log.d("TAG", "createUserWithEmail:success");
                         String uid = mAuth.getUid();
                         user.setId(uid);
                         writeData(USERS_PATH + "/" + uid, user, new DatabaseCallback<Void>() {
@@ -164,15 +163,10 @@ public class DatabaseService {
                             }
                         });
                     } else {
-                        Log.w("TAG", "createUserWithEmail:failure", task.getException());
                         if (callback != null)
                             callback.onFailed(task.getException());
                     }
                 });
-    }
-    public void createNewUser2(@NotNull final User user,
-                               @Nullable final DatabaseCallback<Void> callback) {
-        writeData(USERS_PATH + "/" + user.getId(), user, callback);
     }
 
     public void loginUser(@NotNull final String email,final String password,
@@ -181,12 +175,10 @@ public class DatabaseService {
         mAuth.signInWithEmailAndPassword(email,password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        Log.d("TAG", "loginUserWithEmail:success");
                         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
                         if (callback != null)
                             callback.onCompleted(uid);
                     } else {
-                        Log.w("TAG", "loginUserWithEmail:failure", task.getException());
                         if (callback != null)
                             callback.onFailed(task.getException());
                     }
@@ -209,23 +201,18 @@ public class DatabaseService {
         runTransaction(USERS_PATH + "/" + user.getId(), User.class, currentUser -> user, new DatabaseCallback<User>() {
             @Override
             public void onCompleted(User object) {
-                if (callback != null) {
-                    callback.onCompleted(null);
-                }
+                if (callback != null) callback.onCompleted(null);
             }
-
             @Override
             public void onFailed(Exception e) {
-                if (callback != null) {
-                    callback.onFailed(e);
-                }
+                if (callback != null) callback.onFailed(e);
             }
         });
     }
 
     // endregion User Section
 
-    // region event section
+    // region Event Section
 
     public void createNewEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
         writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
@@ -243,7 +230,6 @@ public class DatabaseService {
         getDataList(EVENTS_PATH, Event.class, callback);
     }
 
-    // מתודה מעודכנת - מביאה פגישות שהמשתמש הוא היוצר שלהן או שהוא אישר הגעה
     public void getUserEvents(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
         getDataList(EVENTS_PATH, Event.class, new DatabaseCallback<List<Event>>() {
             @Override
@@ -267,57 +253,72 @@ public class DatabaseService {
         });
     }
 
-    // מתודה חדשה - מביאה רק פגישות שאליהן המשתמש הוזמן (התראות)
-    public void getUserNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
-        getDataList(EVENTS_PATH, Event.class, new DatabaseCallback<List<Event>>() {
-            @Override
-            public void onCompleted(List<Event> allEvents) {
-                List<Event> pendingEvents = new ArrayList<>();
-                for (Event event : allEvents) {
-                    if (event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId)) {
-                        pendingEvents.add(event);
-                    }
-                }
-                callback.onCompleted(pendingEvents);
-            }
-
-            @Override
-            public void onFailed(Exception e) {
-                callback.onFailed(e);
-            }
-        });
-    }
-
-    // מתודה חדשה - מענה על הזמנה (אישור או דחייה)
-// מתודה חדשה - מענה על הזמנה (אישור או דחייה)
+    // פונקציית המענה על הזמנה (אישור או דחייה) - עכשיו שולחת גם התראה למנהל!
     public void respondToInvitation(String eventId, String userId, boolean isAccepted, DatabaseCallback<Void> callback) {
         getEvent(eventId, new DatabaseCallback<Event>() {
             @Override
             public void onCompleted(Event event) {
                 if (event != null) {
-                    // הסרה מרשימת המוזמנים (טרם אישרו)
+                    // עדכון הרשימות בהתאם לתשובה
                     if (event.getInvitedParticipantIds() != null) {
                         event.getInvitedParticipantIds().remove(userId);
                     }
 
                     if (isAccepted) {
-                        // הוספה למאשרים
                         if (event.getParticipantIds() == null) event.setParticipantIds(new ArrayList<>());
                         if (!event.getParticipantIds().contains(userId)) event.getParticipantIds().add(userId);
-
-                        // הסרה מדוחים (במקרה ששינה דעה)
                         if (event.getDeclinedParticipantIds() != null) event.getDeclinedParticipantIds().remove(userId);
                     } else {
-                        // הוספה לדוחים
                         if (event.getDeclinedParticipantIds() == null) event.setDeclinedParticipantIds(new ArrayList<>());
                         if (!event.getDeclinedParticipantIds().contains(userId)) event.getDeclinedParticipantIds().add(userId);
-
-                        // הסרה ממאשרים (במקרה ששינה דעה)
                         if (event.getParticipantIds() != null) event.getParticipantIds().remove(userId);
                     }
 
-                    // שמירת העדכון במסד הנתונים
-                    updateEvent(event, callback);
+                    // שומרים את הפגישה المעודכנת
+                    updateEvent(event, new DatabaseCallback<Void>() {
+                        @Override
+                        public void onCompleted(Void object) {
+                            // קודם כל מחזירים תשובה ל-UI כדי שהמשתמש לא יחכה
+                            if (callback != null) callback.onCompleted(null);
+
+                            // תהליך צדדי: יצירת התראה למנהל הפגישה
+                            if (event.getEventAdmin() != null) {
+                                String adminId = event.getEventAdmin().getId();
+                                // אין טעם לשלוח למנהל התראה על עצמו אם איכשהו הוא הגיב
+                                if (!adminId.equals(userId)) {
+
+                                    // נביא את שם המשתמש שהגיב (כדי שהמנהל ידע מי זה)
+                                    getUser(userId, new DatabaseCallback<User>() {
+                                        @Override
+                                        public void onCompleted(User user) {
+                                            String userName = (user != null && user.getFname() != null) ? user.getFname() : "משתמש";
+                                            String title = isAccepted ? "אישור הגעה" : "דחיית הגעה";
+                                            String message = userName + (isAccepted ? " אישר/ה הגעה לפגישה: " : " דחה/תה הגעה לפגישה: ") + event.getTitle();
+
+                                            Notification notification = new Notification(
+                                                    generateNotificationId(),
+                                                    adminId, // ההתראה נשלחת אל המנהל!
+                                                    title,
+                                                    message,
+                                                    "INFO",
+                                                    event.getId(),
+                                                    System.currentTimeMillis()
+                                            );
+                                            sendNotification(notification, null);
+                                        }
+
+                                        @Override
+                                        public void onFailed(Exception e) { }
+                                    });
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onFailed(Exception e) {
+                            if (callback != null) callback.onFailed(e);
+                        }
+                    });
                 }
             }
 
@@ -336,5 +337,39 @@ public class DatabaseService {
         deleteData(EVENTS_PATH + "/" + eventId, callback);
     }
 
-    // endregion event section
+    // endregion Event Section
+
+    // region Notifications Section
+
+    public String generateNotificationId() {
+        return generateNewId(NOTIFICATIONS_PATH);
+    }
+
+    public void sendNotification(@NotNull final Notification notification, @Nullable final DatabaseCallback<Void> callback) {
+        writeData(NOTIFICATIONS_PATH + "/" + notification.getId(), notification, callback);
+    }
+
+    public void getSmartNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Notification>> callback) {
+        readData(NOTIFICATIONS_PATH).orderByChild("userId").equalTo(userId).get().addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                Log.e(TAG, "Error getting notifications", task.getException());
+                callback.onFailed(task.getException());
+                return;
+            }
+            List<Notification> notificationsList = new ArrayList<>();
+            task.getResult().getChildren().forEach(dataSnapshot -> {
+                Notification n = dataSnapshot.getValue(Notification.class);
+                if (n != null) {
+                    notificationsList.add(n);
+                }
+            });
+            callback.onCompleted(notificationsList);
+        });
+    }
+
+    public void deleteNotification(@NotNull final String notificationId, @Nullable final DatabaseCallback<Void> callback) {
+        deleteData(NOTIFICATIONS_PATH + "/" + notificationId, callback);
+    }
+
+    // endregion Notifications Section
 }

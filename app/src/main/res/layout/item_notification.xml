@@ -16,60 +16,78 @@
 
         <TextView
             android:id="@+id/tv_notif_title"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="הוזמנת לפגישה: כותרת"
+            android:text="כותרת ההתראה"
             android:textColor="#1F2937"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_notif_datetime"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="תאריך ושעה"
-            android:textColor="#4B5563"
-            android:textSize="14sp" />
+            android:textColor="#9CA3AF"
+            android:textSize="12sp" />
 
         <TextView
-            android:id="@+id/tv_notif_type"
-            android:layout_width="wrap_content"
+            android:id="@+id/tv_notif_message"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="סוג פגישה"
-            android:textColor="#3B82F6"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="8dp"
+            android:text="תוכן ההודעה יופיע כאן..."
+            android:textColor="#4B5563"
+            android:textSize="15sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:orientation="horizontal"
-            android:weightSum="2">
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/ll_invite_actions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:visibility="visible">
+
+                <Button
+                    android:id="@+id/btn_accept"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#10B981"
+                    android:text="אישור הגעה"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="8dp" />
+
+                <Button
+                    android:id="@+id/btn_decline"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#EF4444"
+                    android:text="דחייה"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
 
             <Button
-                android:id="@+id/btn_accept"
-                android:layout_width="0dp"
+                android:id="@+id/btn_dismiss"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:backgroundTint="#10B981"
-                android:text="אישור הגעה"
-                android:textColor="#FFFFFF"
+                android:backgroundTint="#E5E7EB"
+                android:text="הבנתי"
+                android:textColor="#374151"
+                android:visibility="gone"
                 app:cornerRadius="8dp" />
 
-            <Button
-                android:id="@+id/btn_decline"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:backgroundTint="#EF4444"
-                android:text="דחייה"
-                android:textColor="#FFFFFF"
-                app:cornerRadius="8dp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

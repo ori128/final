@@ -130,10 +130,21 @@
             </com.google.android.material.card.MaterialCardView>
 
             <Button
+                android:id="@+id/btn_edit_event"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="#EA580C"
+                android:text="ערוך פגישה ✏️"
+                android:visibility="gone"
+                android:textStyle="bold"
+                app:cornerRadius="12dp" />
+
+            <Button
                 android:id="@+id/btn_back_home"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="8dp"
                 android:backgroundTint="#3B82F6"
                 android:text="חזור לעמוד הבית"
                 app:cornerRadius="20dp" />

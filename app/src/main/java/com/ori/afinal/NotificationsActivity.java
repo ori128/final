@@ -13,8 +13,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.adapter.NotificationAdapter;
-import com.ori.afinal.model.Event;
+import com.ori.afinal.model.Notification;
 
+import java.util.Collections;
 import java.util.List;
 
 public class NotificationsActivity extends AppCompatActivity {
@@ -51,7 +52,7 @@ public class NotificationsActivity extends AppCompatActivity {
 
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
 
-        // יצירת האדפטר, והגדרת פעולה שתתרחש כשמשתמש מאשר או דוחה
+        // יצירת האדפטר
         notificationAdapter = new NotificationAdapter(() -> loadNotifications());
         rvNotifications.setAdapter(notificationAdapter);
 
@@ -59,16 +60,20 @@ public class NotificationsActivity extends AppCompatActivity {
     }
 
     private void loadNotifications() {
-        databaseService.getUserNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
+        databaseService.getSmartNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Notification>>() {
             @Override
-            public void onCompleted(List<Event> events) {
-                if (events == null || events.isEmpty()) {
+            public void onCompleted(List<Notification> notifications) {
+                if (notifications == null || notifications.isEmpty()) {
                     tvEmptyNotifications.setVisibility(View.VISIBLE);
                     rvNotifications.setVisibility(View.GONE);
                 } else {
                     tvEmptyNotifications.setVisibility(View.GONE);
                     rvNotifications.setVisibility(View.VISIBLE);
-                    notificationAdapter.setNotifications(events);
+
+                    // נמיין את ההתראות כך שהחדשות ביותר יהיו למעלה
+                    Collections.sort(notifications, (n1, n2) -> Long.compare(n2.getTimestamp(), n1.getTimestamp()));
+
+                    notificationAdapter.setNotifications(notifications);
                 }
             }
 

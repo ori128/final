@@ -2,6 +2,7 @@ package com.ori.afinal.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.card.MaterialCardView;
 import com.ori.afinal.EventDetails;
 import com.ori.afinal.R;
 import com.ori.afinal.model.Event;
@@ -18,6 +20,11 @@ import java.util.List;
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     private List<Event> eventList = new ArrayList<>();
+    private String currentUserId;
+
+    public void setCurrentUserId(String currentUserId) {
+        this.currentUserId = currentUserId;
+    }
 
     public void setEvents(List<Event> events) {
         this.eventList = events;
@@ -39,7 +46,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.tvLocation.setText(event.getLocation());
         holder.tvType.setText(event.getType());
 
-        // טיפול במניעת קריסה אם התאריך ריק
         if (event.getDateTime() != null) {
             if (event.getDateTime().contains(" ")) {
                 String[] parts = event.getDateTime().split(" ");
@@ -56,17 +62,25 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             }
         }
 
-        // חישוב כמות המשתתפים שאישרו לעומת סך המוזמנים
         int accepted = event.getParticipantIds() != null ? event.getParticipantIds().size() : 0;
         int pending = event.getInvitedParticipantIds() != null ? event.getInvitedParticipantIds().size() : 0;
         int declined = event.getDeclinedParticipantIds() != null ? event.getDeclinedParticipantIds().size() : 0;
-
         int totalInvited = accepted + pending + declined;
 
-        // הצגת הנתונים יחד עם אימוג'י של איש (מחליף צורך להוריד אייקון)
         holder.tvParticipantsCount.setText("👤 " + accepted + "/" + totalInvited);
 
-        // הוספת מאזין ללחיצה על פריט הפגישה מהרשימה
+        // בדיקה האם המשתמש המחובר הוא מנהל הפגישה
+        boolean isAdmin = event.getEventAdmin() != null && event.getEventAdmin().getId().equals(currentUserId);
+
+        if (isAdmin) {
+            // צבע רקע תואם ל"מנהל" בפרטי הפגישה (כתום בהיר)
+            holder.cardView.setCardBackgroundColor(Color.parseColor("#FFEDD5"));
+        } else {
+            // צבע לבן רגיל למשתמש רגיל
+            holder.cardView.setCardBackgroundColor(Color.WHITE);
+        }
+
+        // לחיצה תמיד פותחת את פרטי הפגישה
         holder.itemView.setOnClickListener(v -> {
             Context context = v.getContext();
             Intent intent = new Intent(context, EventDetails.class);
@@ -82,6 +96,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvType, tvLocation, tvTime, tvDate, tvParticipantsCount;
+        MaterialCardView cardView;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -90,7 +105,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvLocation = itemView.findViewById(R.id.tv_event_location);
             tvTime = itemView.findViewById(R.id.tv_event_time);
             tvDate = itemView.findViewById(R.id.tv_event_date);
-            tvParticipantsCount = itemView.findViewById(R.id.tv_event_participants_count); // הקישור החדש
+            tvParticipantsCount = itemView.findViewById(R.id.tv_event_participants_count);
+            cardView = (MaterialCardView) itemView;
         }
     }
 }

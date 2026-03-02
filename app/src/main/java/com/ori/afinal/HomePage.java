@@ -65,7 +65,7 @@ public class HomePage extends AppCompatActivity {
         initViews();
         loadUserData();
         loadEventsData();
-        loadNotificationsCount(); // טעינת כמות ההתראות על ההתחלה
+        loadNotificationsCount();
     }
 
     private void initViews() {
@@ -76,14 +76,13 @@ public class HomePage extends AppCompatActivity {
         rvEvents = findViewById(R.id.rv_events);
         btnLogout = findViewById(R.id.btn_logout);
         btnNotifications = findViewById(R.id.btn_notifications);
-
-        // הקישורים החדשים לעיגול ההתראות
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
 
         if (rvEvents != null) {
             rvEvents.setLayoutManager(new LinearLayoutManager(this));
             eventAdapter = new EventAdapter();
+            eventAdapter.setCurrentUserId(currentUserId); // מעבירים את המזהה לאדפטר!
             rvEvents.setAdapter(eventAdapter);
         }
 
@@ -176,7 +175,6 @@ public class HomePage extends AppCompatActivity {
         });
     }
 
-    // פונקציה חדשה שסופרת את כמות ההתראות הממתינות
     private void loadNotificationsCount() {
         databaseService.getUserNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
@@ -202,6 +200,6 @@ public class HomePage extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadEventsData();
-        loadNotificationsCount(); // עדכון ההתראות בכל פעם שחוזרים לעמוד!
+        loadNotificationsCount();
     }
 }
