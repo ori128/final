@@ -17,13 +17,15 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.ori.afinal.Services.DatabaseService;
+import com.ori.afinal.model.User;
 
 public class Login extends AppCompatActivity {
 
     private EditText etEmail, etPassword;
     private Button btnLogin;
     private TextView tvRegister;
-    private ImageButton btnBackMain; // הכפתור החדש
+    private ImageButton btnBackMain;
     private FirebaseAuth mAuth;
 
     @Override
@@ -51,14 +53,12 @@ public class Login extends AppCompatActivity {
 
         btnLogin.setOnClickListener(v -> loginUser());
 
-        // תיקון הקישור: מעבר ישיר למסך הרשמה
         tvRegister.setOnClickListener(v -> {
             Intent intent = new Intent(Login.this, RegisterUser.class);
             startActivity(intent);
-            finish(); // סוגר את מסך ההתחברות כדי שלא יישאר פתוח ברקע
+            finish();
         });
 
-        // כפתור חזרה למסך הראשי
         btnBackMain.setOnClickListener(v -> {
             finish();
         });
@@ -74,13 +74,29 @@ public class Login extends AppCompatActivity {
         }
 
         mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                if (email.equals("admin@gmail.com")) {
-                    startActivity(new Intent(Login.this, MainAdmin.class));
-                } else {
-                    startActivity(new Intent(Login.this, HomePage.class));
-                }
-                finish();
+            if (task.isSuccessful() && mAuth.getCurrentUser() != null) {
+                // התחברות ל-Auth הצליחה, כעת נבדוק אם המשתמש הוא מנהל במסד הנתונים
+                String currentUserId = mAuth.getCurrentUser().getUid();
+
+                DatabaseService.getInstance().getUser(currentUserId, new DatabaseService.DatabaseCallback<User>() {
+                    @Override
+                    public void onCompleted(User user) {
+                        if (user != null && Boolean.TRUE.equals(user.getAdmin())) {
+                            // המשתמש הוא מנהל
+                            startActivity(new Intent(Login.this, MainAdmin.class));
+                        } else {
+                            // משתמש רגיל
+                            startActivity(new Intent(Login.this, HomePage.class));
+                        }
+                        finish();
+                    }
+
+                    @Override
+                    public void onFailed(Exception e) {
+                        Toast.makeText(Login.this, "שגיאה בשליפת נתוני משתמש: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+
             } else {
                 Toast.makeText(Login.this, "התחברות נכשלה: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
             }

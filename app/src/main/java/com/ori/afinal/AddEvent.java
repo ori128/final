@@ -1,6 +1,13 @@
 package com.ori.afinal;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -44,14 +51,19 @@ public class AddEvent extends AppCompatActivity {
     private FirebaseAuth mAuth;
 
     private Calendar selectedDate;
-
-    // רשימה לשמירת המזהים של המשתתפים שנבחרו
     private List<String> selectedParticipantIds = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_event);
+
+        // בקשת הרשאה להתראות (חובה באנדרואיד 13 ומעלה)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
 
         databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
@@ -134,6 +146,7 @@ public class AddEvent extends AppCompatActivity {
             if (checkedId == R.id.rb_online) {
                 etLocation.setText("Online");
                 etLocation.setEnabled(false);
+                etLocation.setError(null);
             } else {
                 if (etLocation.getText().toString().equals("Online")) {
                     etLocation.setText("");
@@ -191,50 +204,62 @@ public class AddEvent extends AppCompatActivity {
         String endTime = etEndTime.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
 
+        if (TextUtils.isEmpty(title)) {
+            etTitle.setError("חובה להזין כותרת לפגישה");
+            etTitle.requestFocus();
+            return;
+        }
+
         int selectedId = radioGroupType.getCheckedRadioButtonId();
         if (selectedId == -1) {
             Toast.makeText(this, "אנא בחר סוג פגישה", Toast.LENGTH_SHORT).show();
             return;
         }
-        RadioButton selectedRadio = findViewById(selectedId);
-        String type = selectedRadio.getText().toString();
 
-        if (selectedId == R.id.rb_online) {
-            location = "Online";
-        }
-
-        if (title.isEmpty() || date.isEmpty() || startTime.isEmpty() || endTime.isEmpty() || type.isEmpty()) {
-            Toast.makeText(this, "אנא מלא את כל השדות החיוניים", Toast.LENGTH_SHORT).show();
+        if (selectedId == R.id.rb_physical && TextUtils.isEmpty(location)) {
+            etLocation.setError("חובה להזין מיקום עבור פגישה פיזית");
+            etLocation.requestFocus();
             return;
         }
 
+        if (TextUtils.isEmpty(date) || TextUtils.isEmpty(startTime) || TextUtils.isEmpty(endTime)) {
+            Toast.makeText(this, "חובה לבחור תאריך, שעת התחלה ושעת סיום", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (selectedParticipantIds.isEmpty()) {
+            Toast.makeText(this, "חובה להזמין לפחות משתתף אחד", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String type = selectedId == R.id.rb_online ? "פגישה מקוונת (Online)" : "פגישה פיזית";
+        if (selectedId == R.id.rb_online) location = "Online";
+
         double calculatedHours = 0;
+        long meetingStartTimeMillis = 0; // נשמור את זמן הפגישה במילי-שניות
 
         try {
-            // חישוב מבוסס תאריך מלא כדי למנוע בעיות של השוואת זמנים בלי תאריך
             SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-
             Date currentDateTime = new Date();
             Date fullStartObj = sdfFull.parse(date + " " + startTime);
             Date fullEndObj = sdfFull.parse(date + " " + endTime);
 
-            // 1. האם שעת ההתחלה עברה?
             if (fullStartObj != null && fullStartObj.before(currentDateTime)) {
-                Toast.makeText(this, "לא ניתן לקבוע פגישה לתאריך או שעה שעברו", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "לא ניתן לקבוע פגישה לשעה שכבר עברה היום", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            // 2. האם שעת הסיום לפני שעת ההתחלה?
             if (fullStartObj != null && fullEndObj != null && !fullEndObj.after(fullStartObj)) {
-                Toast.makeText(this, "שעת הסיום חייבת להיות מאוחרת משעת ההתחלה", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "שעת הסיום חייבת להיות מאוחרת משעת ההתחלה", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            // 3. חישוב השעות המדויק בהפרש אלפיות השנייה
+            if (fullStartObj != null) {
+                meetingStartTimeMillis = fullStartObj.getTime();
+            }
+
             long diffInMillis = fullEndObj.getTime() - fullStartObj.getTime();
             calculatedHours = diffInMillis / (1000.0 * 60 * 60);
-
-            // עיגול התוצאה ל-2 ספרות אחרי הנקודה (כדי למנוע תוצאות כמו 1.999999)
             calculatedHours = Math.round(calculatedHours * 100.0) / 100.0;
 
         } catch (Exception e) {
@@ -243,51 +268,71 @@ public class AddEvent extends AppCompatActivity {
             return;
         }
 
-        String dateTime = date + " " + startTime;
-
-        if (mAuth.getCurrentUser() == null) {
-            Toast.makeText(this, "משתמש לא מחובר", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+        if (mAuth.getCurrentUser() == null) return;
         String uid = mAuth.getCurrentUser().getUid();
         User admin = new User();
         admin.setId(uid);
 
+        String dateTime = date + " " + startTime;
+
         Event event = new Event(
-                databaseService.generateEventId(),
-                title,
-                description,
-                dateTime,
-                type,
-                location,
-                calculatedHours,
-                admin
+                databaseService.generateEventId(), title, description, dateTime, type, location, calculatedHours, admin
         );
 
-        if (selectedParticipantIds.contains(uid)) {
-            selectedParticipantIds.remove(uid);
-        }
-
+        if (selectedParticipantIds.contains(uid)) selectedParticipantIds.remove(uid);
         event.setInvitedParticipantIds(selectedParticipantIds);
 
         List<String> acceptedList = new ArrayList<>();
         acceptedList.add(uid);
         event.setParticipantIds(acceptedList);
 
+        final long finalMeetingStartTime = meetingStartTimeMillis; // שומרים לשימוש ב-callback
+
         databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
-                Log.d(TAG, "Event created successfully");
+                // ברגע שהפגישה נוצרה ב-Firebase, אנחנו קובעים שעון מעורר ברקע!
+                scheduleNotification(event, finalMeetingStartTime);
+
                 Toast.makeText(AddEvent.this, "הפגישה נוצרה וההזמנות נשלחו", Toast.LENGTH_SHORT).show();
                 finish();
             }
 
             @Override
             public void onFailed(Exception e) {
-                Log.e(TAG, "Failed to create event", e);
-                Toast.makeText(AddEvent.this, "שגיאה ביצירת הפגישה", Toast.LENGTH_SHORT).show();
+                Toast.makeText(AddEvent.this, "שגיאה ביצירת הפגישה: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    // הפונקציה החדשה שמחשבת וקובעת את ההתראה
+    private void scheduleNotification(Event event, long meetingTimeInMillis) {
+        long alarmTime = meetingTimeInMillis - (15 * 60 * 1000); // 15 דקות לפני הפגישה
+
+        if (alarmTime < System.currentTimeMillis()) {
+            return; // הפגישה קרובה מדי, לא נגדיר התראה לעבר
+        }
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, MeetingReminderReceiver.class);
+        intent.putExtra("EVENT_TITLE", event.getTitle());
+        intent.putExtra("EVENT_ID", event.getId());
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this,
+                event.getId().hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        if (alarmManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent);
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent);
+            }
+        }
     }
 }

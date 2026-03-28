@@ -90,7 +90,18 @@
                         android:drawablePadding="8dp"
                         android:textSize="16sp"
                         android:textColor="#4B5563"
-                        android:layout_marginBottom="16dp"/>
+                        android:layout_marginBottom="8dp"/>
+
+                    <Button
+                        android:id="@+id/btn_navigate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:backgroundTint="#10B981"
+                        android:text="נווט לפגישה 📍"
+                        android:textColor="#FFFFFF"
+                        android:visibility="gone"
+                        app:cornerRadius="8dp" />
 
                     <TextView
                         android:layout_width="match_parent"

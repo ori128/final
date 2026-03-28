@@ -1,8 +1,10 @@
 package com.ori.afinal;
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -24,7 +26,7 @@ public class EventDetails extends AppCompatActivity {
 
     private TextView tvTitle, tvType, tvDateTime, tvLocation, tvDescription;
     private LinearLayout llParticipants;
-    private Button btnBackHome, btnEditEvent;
+    private Button btnBackHome, btnEditEvent, btnNavigate;
     private DatabaseService databaseService;
     private String currentUserId;
 
@@ -38,7 +40,6 @@ public class EventDetails extends AppCompatActivity {
             currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
 
-        // קישור משתנים לעיצוב
         tvTitle = findViewById(R.id.tv_detail_title);
         tvType = findViewById(R.id.tv_detail_type);
         tvDateTime = findViewById(R.id.tv_detail_datetime);
@@ -47,22 +48,18 @@ public class EventDetails extends AppCompatActivity {
         llParticipants = findViewById(R.id.ll_detail_participants);
         btnBackHome = findViewById(R.id.btn_back_home);
         btnEditEvent = findViewById(R.id.btn_edit_event);
+        btnNavigate = findViewById(R.id.btn_navigate); // קישור הכפתור החדש
 
         btnBackHome.setOnClickListener(v -> finish());
 
         String eventId = getIntent().getStringExtra("EVENT_ID");
 
         if (eventId != null) {
-            // הוסרה הקריאה ל-loadEventData מכאן כדי למנוע כפילות.
-            // onResume מטפל בטעינה של הנתונים ברגע שהמסך נפתח.
-
-            // לחיצה על כפתור העריכה
             btnEditEvent.setOnClickListener(v -> {
                 Intent intent = new Intent(EventDetails.this, UpdateEvent.class);
                 intent.putExtra("EVENT_ID", eventId);
                 startActivity(intent);
             });
-
         } else {
             Toast.makeText(this, "שגיאה בטעינת הפגישה", Toast.LENGTH_SHORT).show();
             finish();
@@ -77,7 +74,26 @@ public class EventDetails extends AppCompatActivity {
                     tvTitle.setText(event.getTitle() != null ? event.getTitle() : "ללא כותרת");
                     tvType.setText(event.getType() != null ? event.getType() : "סוג לא ידוע");
                     tvDateTime.setText(event.getDateTime() != null ? event.getDateTime() : "לא צוין זמן");
-                    tvLocation.setText(event.getLocation() != null ? event.getLocation() : "לא צוין מיקום");
+
+                    String location = event.getLocation() != null ? event.getLocation() : "לא צוין מיקום";
+                    tvLocation.setText(location);
+
+                    // טיפול בכפתור הניווט: יופיע רק אם יש מיקום והוא לא "Online"
+                    if (!location.equals("Online") && !location.equals("לא צוין מיקום")) {
+                        btnNavigate.setVisibility(View.VISIBLE);
+                        btnNavigate.setOnClickListener(v -> {
+                            // יצירת Intent מרומז לפתיחת אפליקציית מפות/ניווט
+                            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(location));
+                            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                            try {
+                                startActivity(mapIntent);
+                            } catch (ActivityNotFoundException e) {
+                                Toast.makeText(EventDetails.this, "לא נמצאה אפליקציית ניווט במכשיר", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        btnNavigate.setVisibility(View.GONE);
+                    }
 
                     if (event.getDescription() != null && !event.getDescription().isEmpty()) {
                         tvDescription.setText(event.getDescription());
@@ -85,14 +101,12 @@ public class EventDetails extends AppCompatActivity {
                         tvDescription.setText("אין תיאור לפגישה זו.");
                     }
 
-                    // בדיקה: האם המשתמש הנוכחי הוא מנהל הפגישה? אם כן, הראה את כפתור העריכה
                     if (event.getEventAdmin() != null && event.getEventAdmin().getId().equals(currentUserId)) {
                         btnEditEvent.setVisibility(View.VISIBLE);
                     } else {
                         btnEditEvent.setVisibility(View.GONE);
                     }
 
-                    // טעינת משתתפים עם כל הרשימות
                     loadParticipantsNames(event);
                 }
             }
@@ -108,7 +122,6 @@ public class EventDetails extends AppCompatActivity {
         databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
             @Override
             public void onCompleted(List<User> users) {
-                // הניקוי הועבר לכאן - מנקה את הרשימה בדיוק לפני שאנחנו מתחילים למלא אותה
                 llParticipants.removeAllViews();
 
                 if (users == null) return;
@@ -122,7 +135,6 @@ public class EventDetails extends AppCompatActivity {
                     String bgColor = "";
                     boolean isInvolved = false;
 
-                    // בדיקה מה הסטטוס של המשתמש ביחס לפגישה
                     if (user.getId().equals(adminId)) {
                         status = "מנהל";
                         textColor = "#EA580C";
@@ -164,7 +176,6 @@ public class EventDetails extends AppCompatActivity {
 
             @Override
             public void onFailed(Exception e) {
-                // ניקוי לפני הצגת שגיאה כדי למנוע כפילויות של הודעות שגיאה
                 llParticipants.removeAllViews();
                 TextView tvError = new TextView(EventDetails.this);
                 tvError.setText("שגיאה בטעינת המשתתפים");
@@ -210,7 +221,6 @@ public class EventDetails extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // רענון הנתונים אם המשתמש חזר מעמוד עריכה (וזוהי גם קריאת הטעינה הראשונה כשהמסך נפתח)
         String eventId = getIntent().getStringExtra("EVENT_ID");
         if (eventId != null) {
             loadEventData(eventId);
