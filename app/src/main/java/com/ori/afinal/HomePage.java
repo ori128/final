@@ -24,6 +24,7 @@ import com.ori.afinal.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class HomePage extends AppCompatActivity {
 
@@ -79,10 +80,15 @@ public class HomePage extends AppCompatActivity {
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
 
+        // הסתרת בועת ההתראות כברירת מחדל עד לקבלת הנתונים מהשרת
+        if (cvNotificationBadge != null) {
+            cvNotificationBadge.setVisibility(View.GONE);
+        }
+
         if (rvEvents != null) {
             rvEvents.setLayoutManager(new LinearLayoutManager(this));
             eventAdapter = new EventAdapter();
-            eventAdapter.setCurrentUserId(currentUserId); // מעבירים את המזהה לאדפטר!
+            eventAdapter.setCurrentUserId(currentUserId);
             rvEvents.setAdapter(eventAdapter);
         }
 
@@ -149,11 +155,14 @@ public class HomePage extends AppCompatActivity {
                 if (events == null) return;
 
                 List<Event> myEvents = new ArrayList<>();
-                int totalDuration = 0;
+
+                // שינוי ל-double כדי לתמוך בשעות כמו 1.5
+                double totalDuration = 0;
 
                 for (Event event : events) {
                     myEvents.add(event);
-                    totalDuration += 1;
+                    // משיכת השעות מהמודל של הפגישה במקום פשוט להוסיף 1
+                    totalDuration += event.getParticipationHours();
                 }
 
                 if (eventAdapter != null) {
@@ -164,7 +173,14 @@ public class HomePage extends AppCompatActivity {
                     tvStatsCount.setText(String.valueOf(myEvents.size()));
                 }
                 if (tvStatsDuration != null) {
-                    tvStatsDuration.setText(totalDuration + "h");
+                    // עיצוב התצוגה של השעות: מציג מספר שלם אם אין שארית, או מספר עשרוני
+                    String durationText;
+                    if (totalDuration == (long) totalDuration) {
+                        durationText = String.format(Locale.getDefault(), "%dh", (long) totalDuration);
+                    } else {
+                        durationText = String.format(Locale.getDefault(), "%.1fh", totalDuration);
+                    }
+                    tvStatsDuration.setText(durationText);
                 }
             }
 
@@ -192,6 +208,10 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onFailed(Exception e) {
                 Log.e(TAG, "Failed to load notifications count", e);
+                // במקרה של שגיאה נוודא שהבועה מוסתרת
+                if (cvNotificationBadge != null) {
+                    cvNotificationBadge.setVisibility(View.GONE);
+                }
             }
         });
     }

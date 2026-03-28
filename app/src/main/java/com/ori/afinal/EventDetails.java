@@ -53,7 +53,8 @@ public class EventDetails extends AppCompatActivity {
         String eventId = getIntent().getStringExtra("EVENT_ID");
 
         if (eventId != null) {
-            loadEventData(eventId);
+            // הוסרה הקריאה ל-loadEventData מכאן כדי למנוע כפילות.
+            // onResume מטפל בטעינה של הנתונים ברגע שהמסך נפתח.
 
             // לחיצה על כפתור העריכה
             btnEditEvent.setOnClickListener(v -> {
@@ -104,11 +105,12 @@ public class EventDetails extends AppCompatActivity {
     }
 
     private void loadParticipantsNames(Event event) {
-        llParticipants.removeAllViews();
-
         databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
             @Override
             public void onCompleted(List<User> users) {
+                // הניקוי הועבר לכאן - מנקה את הרשימה בדיוק לפני שאנחנו מתחילים למלא אותה
+                llParticipants.removeAllViews();
+
                 if (users == null) return;
 
                 boolean hasParticipants = false;
@@ -162,6 +164,8 @@ public class EventDetails extends AppCompatActivity {
 
             @Override
             public void onFailed(Exception e) {
+                // ניקוי לפני הצגת שגיאה כדי למנוע כפילויות של הודעות שגיאה
+                llParticipants.removeAllViews();
                 TextView tvError = new TextView(EventDetails.this);
                 tvError.setText("שגיאה בטעינת המשתתפים");
                 llParticipants.addView(tvError);
@@ -206,7 +210,7 @@ public class EventDetails extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // רענון הנתונים אם המשתמש חזר מעמוד עריכה
+        // רענון הנתונים אם המשתמש חזר מעמוד עריכה (וזוהי גם קריאת הטעינה הראשונה כשהמסך נפתח)
         String eventId = getIntent().getStringExtra("EVENT_ID");
         if (eventId != null) {
             loadEventData(eventId);

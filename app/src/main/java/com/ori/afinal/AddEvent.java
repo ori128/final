@@ -12,6 +12,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.DateValidatorPointForward;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.timepicker.MaterialTimePicker;
@@ -24,6 +26,7 @@ import com.ori.afinal.model.User;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -142,10 +145,15 @@ public class AddEvent extends AppCompatActivity {
 
     private void setupPickers() {
         etDatePicker.setOnClickListener(v -> {
+            CalendarConstraints.Builder constraintsBuilder = new CalendarConstraints.Builder()
+                    .setValidator(DateValidatorPointForward.now());
+
             MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
                     .setTitleText("בחר תאריך")
                     .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .setCalendarConstraints(constraintsBuilder.build())
                     .build();
+
             datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
             datePicker.addOnPositiveButtonClickListener(selection -> {
                 selectedDate.setTimeInMillis(selection);
@@ -180,6 +188,7 @@ public class AddEvent extends AppCompatActivity {
         String description = etDescription.getText().toString().trim();
         String date = etDatePicker.getText().toString().trim();
         String startTime = etStartTime.getText().toString().trim();
+        String endTime = etEndTime.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
 
         int selectedId = radioGroupType.getCheckedRadioButtonId();
@@ -194,8 +203,43 @@ public class AddEvent extends AppCompatActivity {
             location = "Online";
         }
 
-        if (title.isEmpty() || date.isEmpty() || startTime.isEmpty() || type.isEmpty()) {
+        if (title.isEmpty() || date.isEmpty() || startTime.isEmpty() || endTime.isEmpty() || type.isEmpty()) {
             Toast.makeText(this, "אנא מלא את כל השדות החיוניים", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double calculatedHours = 0;
+
+        try {
+            // חישוב מבוסס תאריך מלא כדי למנוע בעיות של השוואת זמנים בלי תאריך
+            SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
+            Date currentDateTime = new Date();
+            Date fullStartObj = sdfFull.parse(date + " " + startTime);
+            Date fullEndObj = sdfFull.parse(date + " " + endTime);
+
+            // 1. האם שעת ההתחלה עברה?
+            if (fullStartObj != null && fullStartObj.before(currentDateTime)) {
+                Toast.makeText(this, "לא ניתן לקבוע פגישה לתאריך או שעה שעברו", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 2. האם שעת הסיום לפני שעת ההתחלה?
+            if (fullStartObj != null && fullEndObj != null && !fullEndObj.after(fullStartObj)) {
+                Toast.makeText(this, "שעת הסיום חייבת להיות מאוחרת משעת ההתחלה", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 3. חישוב השעות המדויק בהפרש אלפיות השנייה
+            long diffInMillis = fullEndObj.getTime() - fullStartObj.getTime();
+            calculatedHours = diffInMillis / (1000.0 * 60 * 60);
+
+            // עיגול התוצאה ל-2 ספרות אחרי הנקודה (כדי למנוע תוצאות כמו 1.999999)
+            calculatedHours = Math.round(calculatedHours * 100.0) / 100.0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "שגיאה בחישוב התאריכים", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -217,7 +261,7 @@ public class AddEvent extends AppCompatActivity {
                 dateTime,
                 type,
                 location,
-                0,
+                calculatedHours,
                 admin
         );
 

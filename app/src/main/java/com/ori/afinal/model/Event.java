@@ -12,7 +12,7 @@ public class Event {
     private String type;     // meeting / call / event
     private String location;
     private String status;   // ACTIVE / CANCELED / FINISHED
-    private int maxNumOfParticipants;
+    private double participationHours; // הוחלף מ- maxNumOfParticipants לטובת חישוב שעות
     private User eventAdmin;
     private List<String> participantIds; // משתתפים שאישרו
     private List<String> invitedParticipantIds; // מוזמנים שטרם אישרו
@@ -33,7 +33,7 @@ public class Event {
                  String dateTime,
                  String type,
                  String location,
-                 int maxNumOfParticipants,
+                 double participationHours,
                  User eventAdmin) {
 
         this.id = id;
@@ -42,7 +42,7 @@ public class Event {
         this.dateTime = dateTime;
         this.type = type;
         this.location = location;
-        this.maxNumOfParticipants = maxNumOfParticipants;
+        this.participationHours = participationHours;
         this.eventAdmin = eventAdmin;
         this.status = "ACTIVE";
         this.participantIds = new ArrayList<>();
@@ -66,15 +66,15 @@ public class Event {
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
-    public String Location() { return location; } // השארתי את הפונקציה למקרה שיש שימוש כזה
+    public String Location() { return location; }
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public int getMaxNumOfParticipants() { return maxNumOfParticipants; }
-    public void setMaxNumOfParticipants(int maxNumOfParticipants) { this.maxNumOfParticipants = maxNumOfParticipants; }
+    public double getParticipationHours() { return participationHours; }
+    public void setParticipationHours(double participationHours) { this.participationHours = participationHours; }
 
     public User getEventAdmin() { return eventAdmin; }
     public void setEventAdmin(User eventAdmin) { this.eventAdmin = eventAdmin; }
