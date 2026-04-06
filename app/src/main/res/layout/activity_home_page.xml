@@ -171,18 +171,37 @@
 
         </LinearLayout>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cv_search"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp"
+            app:layout_constraintTop_toBottomOf="@+id/stats_container">
+
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/sv_events"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:iconifiedByDefault="false"
+                app:queryBackground="@android:color/transparent"
+                app:queryHint="חפש לפי כותרת או מיקום..." />
+        </com.google.android.material.card.MaterialCardView>
+
         <TextView
             android:id="@+id/tv_list_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="24dp"
             android:layout_marginEnd="24dp"
             android:text="הפגישות הקרובות"
             android:textColor="#1F2937"
             android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/header_bg" />
+            app:layout_constraintTop_toBottomOf="@+id/cv_search" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_events"

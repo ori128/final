@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView; // שים לב ל-Import הזה
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -35,11 +36,15 @@ public class HomePage extends AppCompatActivity {
     private RecyclerView rvEvents;
     private FloatingActionButton fabAddEvent;
     private ImageButton btnLogout, btnNotifications;
+    private SearchView svEvents; // משתנה לשורת החיפוש
 
     private EventAdapter eventAdapter;
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
     private String currentUserId;
+
+    // רשימה שתשמור תמיד את כל הפגישות (כדי שנוכל לסנן מתוכה)
+    private List<Event> fullEventsList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,8 +84,8 @@ public class HomePage extends AppCompatActivity {
         btnNotifications = findViewById(R.id.btn_notifications);
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
+        svEvents = findViewById(R.id.sv_events); // אתחול החיפוש
 
-        // הסתרת בועת ההתראות כברירת מחדל עד לקבלת הנתונים מהשרת
         if (cvNotificationBadge != null) {
             cvNotificationBadge.setVisibility(View.GONE);
         }
@@ -90,6 +95,22 @@ public class HomePage extends AppCompatActivity {
             eventAdapter = new EventAdapter();
             eventAdapter.setCurrentUserId(currentUserId);
             rvEvents.setAdapter(eventAdapter);
+        }
+
+        // הגדרת מאזין לשורת החיפוש - מופעל בכל פעם שמוסיפים או מוחקים אות
+        if (svEvents != null) {
+            svEvents.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return false;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    filterEvents(newText);
+                    return true;
+                }
+            });
         }
 
         if (fabAddEvent != null) {
@@ -108,6 +129,38 @@ public class HomePage extends AppCompatActivity {
                 Intent intent = new Intent(HomePage.this, NotificationsActivity.class);
                 startActivity(intent);
             });
+        }
+    }
+
+    private void filterEvents(String text) {
+        // אם אין פגישות בכלל, אין מה לסנן
+        if (fullEventsList == null || fullEventsList.isEmpty()) {
+            return;
+        }
+
+        List<Event> filteredList = new ArrayList<>();
+
+        for (Event event : fullEventsList) {
+            boolean isMatch = false;
+
+            // בדיקה האם כותרת הפגישה מכילה את טקסט החיפוש
+            if (event.getTitle() != null && event.getTitle().toLowerCase().contains(text.toLowerCase())) {
+                isMatch = true;
+            }
+
+            // בדיקה האם מיקום הפגישה מכיל את טקסט החיפוש
+            if (event.getLocation() != null && event.getLocation().toLowerCase().contains(text.toLowerCase())) {
+                isMatch = true;
+            }
+
+            if (isMatch) {
+                filteredList.add(event);
+            }
+        }
+
+        // עדכון הרשימה שמוצגת למשתמש
+        if (eventAdapter != null) {
+            eventAdapter.setEvents(filteredList);
         }
     }
 
@@ -154,26 +207,23 @@ public class HomePage extends AppCompatActivity {
 
                 if (events == null) return;
 
-                List<Event> myEvents = new ArrayList<>();
-
-                // שינוי ל-double כדי לתמוך בשעות כמו 1.5
+                fullEventsList.clear(); // מנקים את הרשימה המלאה הישנה
                 double totalDuration = 0;
 
                 for (Event event : events) {
-                    myEvents.add(event);
-                    // משיכת השעות מהמודל של הפגישה במקום פשוט להוסיף 1
+                    fullEventsList.add(event); // שומרים את הפגישה ברשימה המלאה
                     totalDuration += event.getParticipationHours();
                 }
 
-                if (eventAdapter != null) {
-                    eventAdapter.setEvents(myEvents);
-                }
+                // הפעלת החיפוש מחדש במקרה שהמשתמש השאיר טקסט בתיבה
+                String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
+                filterEvents(currentQuery);
 
                 if (tvStatsCount != null) {
-                    tvStatsCount.setText(String.valueOf(myEvents.size()));
+                    tvStatsCount.setText(String.valueOf(fullEventsList.size()));
                 }
+
                 if (tvStatsDuration != null) {
-                    // עיצוב התצוגה של השעות: מציג מספר שלם אם אין שארית, או מספר עשרוני
                     String durationText;
                     if (totalDuration == (long) totalDuration) {
                         durationText = String.format(Locale.getDefault(), "%dh", (long) totalDuration);
@@ -208,7 +258,6 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onFailed(Exception e) {
                 Log.e(TAG, "Failed to load notifications count", e);
-                // במקרה של שגיאה נוודא שהבועה מוסתרת
                 if (cvNotificationBadge != null) {
                     cvNotificationBadge.setVisibility(View.GONE);
                 }
