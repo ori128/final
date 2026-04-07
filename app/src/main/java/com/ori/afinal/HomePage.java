@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,16 +38,16 @@ public class HomePage extends AppCompatActivity {
 
     private static final String TAG = "HomePage";
 
-    private TextView tvGreeting, tvStatsCount, tvStatsDuration, tvNotificationBadgeCount;
+    private TextView tvGreeting, tvDate, tvDay, tvPoints;
+    private TextView tvStatsCount, tvStatsDuration, tvNotificationBadgeCount;
     private TextView tvListHeader, tvEmptyText;
     private View cvNotificationBadge;
     private RecyclerView rvEvents, rvTemplates;
     private FloatingActionButton fabAddEvent;
-    private ImageButton btnLogout, btnNotifications;
     private SearchView svEvents;
 
-    // כפתורי הניווט המרחף
-    private ImageButton navUpcoming, navHistory, navProfile;
+    private View btnProfile;
+    private ImageButton navUpcoming, navHistory, navNotifications;
 
     private CircularProgressIndicator progressMeetings, progressHours;
 
@@ -62,8 +61,6 @@ public class HomePage extends AppCompatActivity {
     private String currentUserId;
 
     private List<Event> fullEventsList = new ArrayList<>();
-
-    // משתנה ששומר איזה מסך אנחנו מראים כרגע (עתיד או עבר)
     private boolean isShowingHistory = false;
 
     private final int GOAL_MEETINGS = 5;
@@ -92,6 +89,7 @@ public class HomePage extends AppCompatActivity {
         }
 
         initViews();
+        setupDateTime();
         setupBottomNavigation();
         loadTemplates();
         loadUserData();
@@ -99,15 +97,29 @@ public class HomePage extends AppCompatActivity {
         loadNotificationsCount();
     }
 
+    // הוספנו תמיכה לחזרה ממסך ההתראות!
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (intent != null && intent.getBooleanExtra("SHOW_HISTORY", false)) {
+            navHistory.performClick();
+        } else {
+            navUpcoming.performClick();
+        }
+    }
+
     private void initViews() {
         tvGreeting = findViewById(R.id.tv_greeting);
+        tvDate = findViewById(R.id.tv_date);
+        tvDay = findViewById(R.id.tv_day);
+        tvPoints = findViewById(R.id.tv_points);
+        btnProfile = findViewById(R.id.btn_profile);
+
         tvStatsCount = findViewById(R.id.tv_stats_count);
         tvStatsDuration = findViewById(R.id.tv_stats_duration);
         fabAddEvent = findViewById(R.id.fab_add_event);
         rvEvents = findViewById(R.id.rv_events);
         rvTemplates = findViewById(R.id.rv_templates);
-        btnLogout = findViewById(R.id.btn_logout);
-        btnNotifications = findViewById(R.id.btn_notifications);
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
         svEvents = findViewById(R.id.sv_events);
@@ -117,7 +129,7 @@ public class HomePage extends AppCompatActivity {
 
         navUpcoming = findViewById(R.id.nav_upcoming);
         navHistory = findViewById(R.id.nav_history);
-        navProfile = findViewById(R.id.nav_profile);
+        navNotifications = findViewById(R.id.nav_notifications);
 
         progressMeetings = findViewById(R.id.progress_meetings);
         progressHours = findViewById(R.id.progress_hours);
@@ -168,53 +180,49 @@ public class HomePage extends AppCompatActivity {
             });
         }
 
-        if (btnLogout != null) {
-            btnLogout.setOnClickListener(v -> showLogoutDialog());
-        }
-
-        if (btnNotifications != null) {
-            btnNotifications.setOnClickListener(v -> {
-                Intent intent = new Intent(HomePage.this, NotificationsActivity.class);
-                startActivity(intent);
-            });
+        if (btnProfile != null) {
+            btnProfile.setOnClickListener(v -> showLogoutDialog());
         }
     }
 
-    // הפונקציה שמטפלת בלחיצות על תפריט הניווט התחתון
+    private void setupDateTime() {
+        SimpleDateFormat sdfDay = new SimpleDateFormat("EEEE", new Locale("he", "IL"));
+        SimpleDateFormat sdfDate = new SimpleDateFormat("d MMMM", new Locale("he", "IL"));
+
+        if (tvDay != null) tvDay.setText(sdfDay.format(new Date()));
+        if (tvDate != null) tvDate.setText(sdfDate.format(new Date()));
+    }
+
     private void setupBottomNavigation() {
         navUpcoming.setOnClickListener(v -> {
             isShowingHistory = false;
-            // צובע את הבית בכחול, ואת השאר באפור
             navUpcoming.setColorFilter(Color.parseColor("#3B82F6"));
             navHistory.setColorFilter(Color.parseColor("#6B7280"));
-            navProfile.setColorFilter(Color.parseColor("#6B7280"));
+            navNotifications.setColorFilter(Color.parseColor("#6B7280"));
 
             tvListHeader.setText("הפגישות הקרובות");
             tvEmptyText.setText("אין לך פגישות קרובות...\nזה הזמן לנוח! ☕");
 
-            // מרענן את הרשימה
             String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
             filterEvents(currentQuery);
         });
 
         navHistory.setOnClickListener(v -> {
             isShowingHistory = true;
-            // צובע את ההיסטוריה בכחול, ואת השאר באפור
             navHistory.setColorFilter(Color.parseColor("#3B82F6"));
             navUpcoming.setColorFilter(Color.parseColor("#6B7280"));
-            navProfile.setColorFilter(Color.parseColor("#6B7280"));
+            navNotifications.setColorFilter(Color.parseColor("#6B7280"));
 
             tvListHeader.setText("היסטוריית פגישות");
             tvEmptyText.setText("היסטוריית הפגישות שלך ריקה...");
 
-            // מרענן את הרשימה
             String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
             filterEvents(currentQuery);
         });
 
-        navProfile.setOnClickListener(v -> {
-            // כרגע רק מציג הודעה, בהמשך ניצור לזה מסך!
-            Toast.makeText(HomePage.this, "פרופיל אישי יעלה בקרוב!", Toast.LENGTH_SHORT).show();
+        navNotifications.setOnClickListener(v -> {
+            Intent intent = new Intent(HomePage.this, NotificationsActivity.class);
+            startActivity(intent);
         });
     }
 
@@ -235,7 +243,6 @@ public class HomePage extends AppCompatActivity {
         rvTemplates.setAdapter(templateAdapter);
     }
 
-    // עדכנו את מנגנון הסינון כדי שידע להפריד בין פגישות עבר ועתיד
     private void filterEvents(String text) {
         if (fullEventsList == null || fullEventsList.isEmpty()) {
             rvEvents.setVisibility(View.GONE);
@@ -251,7 +258,6 @@ public class HomePage extends AppCompatActivity {
         for (Event event : fullEventsList) {
             boolean isPastEvent = false;
 
-            // בודקים אם הפגישה הסתיימה
             try {
                 if (event.getDateTime() != null) {
                     Date startDate = sdfFull.parse(event.getDateTime());
@@ -267,11 +273,9 @@ public class HomePage extends AppCompatActivity {
                 e.printStackTrace();
             }
 
-            // מסננים לפי מה שהמשתמש בחר בתפריט התחתון
-            if (isShowingHistory && !isPastEvent) continue; // אנחנו בהיסטוריה אבל הפגישה בעתיד - דלג
-            if (!isShowingHistory && isPastEvent) continue; // אנחנו בבית אבל הפגישה בעבר - דלג
+            if (isShowingHistory && !isPastEvent) continue;
+            if (!isShowingHistory && isPastEvent) continue;
 
-            // מסננים לפי החיפוש (אם יש)
             boolean isMatch = false;
             if (text.isEmpty()) {
                 isMatch = true;
@@ -300,8 +304,8 @@ public class HomePage extends AppCompatActivity {
         if (isFinishing() || isDestroyed()) return;
 
         new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("התנתקות")
-                .setMessage("האם אתה בטוח שברצונך להתנתק?")
+                .setTitle("אזור אישי")
+                .setMessage("האם אתה בטוח שברצונך להתנתק מהמערכת?")
                 .setPositiveButton("כן, התנתק", (dialog, which) -> {
                     mAuth.signOut();
                     Intent intent = new Intent(HomePage.this, MainActivity.class);
@@ -319,7 +323,7 @@ public class HomePage extends AppCompatActivity {
             public void onCompleted(User user) {
                 if (isFinishing() || isDestroyed()) return;
                 if (user != null && user.getFname() != null && tvGreeting != null) {
-                    tvGreeting.setText("שלום, " + user.getFname());
+                    tvGreeting.setText("היי, " + user.getFname());
                 }
             }
             @Override
@@ -335,6 +339,7 @@ public class HomePage extends AppCompatActivity {
 
                 fullEventsList.clear();
                 double totalDuration = 0;
+                int completedMeetingsCount = 0;
 
                 if (events != null) {
                     long currentTime = System.currentTimeMillis();
@@ -354,15 +359,16 @@ public class HomePage extends AppCompatActivity {
                                     long startMillis = startDate.getTime();
                                     long endMillis = startMillis + (long) (event.getParticipationHours() * 60 * 60 * 1000);
 
-                                    // מזהה פגישת לייב לעכשיו
                                     if (liveEvent == null && currentTime >= startMillis && currentTime <= endMillis) {
                                         liveEvent = event;
                                         liveEventEndTimeMillis = endMillis;
                                     }
 
-                                    // מחשב שעות התקדמות רק על פגישות שכבר הסתיימו או קורות עכשיו (הגיוני, לא?)
                                     if (currentTime >= startMillis) {
                                         totalDuration += event.getParticipationHours();
+                                    }
+                                    if (currentTime > endMillis) {
+                                        completedMeetingsCount++;
                                     }
                                 }
                             }
@@ -377,6 +383,10 @@ public class HomePage extends AppCompatActivity {
                         tvLiveTime.setText("מסתיים ב- " + sdfTime.format(new Date(liveEventEndTimeMillis)));
                     } else {
                         cvLiveMeeting.setVisibility(View.GONE);
+                    }
+
+                    if (tvPoints != null) {
+                        tvPoints.setText(String.valueOf(completedMeetingsCount * 10));
                     }
                 }
 
