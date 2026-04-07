@@ -58,7 +58,6 @@ public class AddEvent extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_event);
 
-        // בקשת הרשאה להתראות (חובה באנדרואיד 13 ומעלה)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
@@ -87,6 +86,9 @@ public class AddEvent extends AppCompatActivity {
 
         setupPickers();
         setupRadioGroupListener();
+
+        // כאן אנחנו בודקים אם הגענו מ"תבנית מהירה" וממלאים את הנתונים
+        handleTemplateData();
 
         btnSaveEvent.setOnClickListener(v -> createEvent());
         btnBack.setOnClickListener(v -> finish());
@@ -139,6 +141,35 @@ public class AddEvent extends AppCompatActivity {
                 }
             });
         });
+    }
+
+    // הפונקציה החדשה שמטפלת בתבניות (Routines)
+    private void handleTemplateData() {
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra("TEMPLATE_TITLE")) {
+            String title = intent.getStringExtra("TEMPLATE_TITLE");
+            int durationMinutes = intent.getIntExtra("TEMPLATE_DURATION", 0);
+
+            etTitle.setText(title);
+
+            if (durationMinutes > 0) {
+                // קובע תאריך להיום
+                selectedDate = Calendar.getInstance();
+                SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                etDatePicker.setText(sdfDate.format(selectedDate.getTime()));
+
+                // קובע שעת התחלה לעוד 5 דקות מהרגע הנוכחי
+                Calendar startCal = Calendar.getInstance();
+                startCal.add(Calendar.MINUTE, 5);
+                SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                etStartTime.setText(sdfTime.format(startCal.getTime()));
+
+                // קובע שעת סיום לפי משך הזמן של התבנית
+                Calendar endCal = (Calendar) startCal.clone();
+                endCal.add(Calendar.MINUTE, durationMinutes);
+                etEndTime.setText(sdfTime.format(endCal.getTime()));
+            }
+        }
     }
 
     private void setupRadioGroupListener() {
@@ -236,7 +267,7 @@ public class AddEvent extends AppCompatActivity {
         if (selectedId == R.id.rb_online) location = "Online";
 
         double calculatedHours = 0;
-        long meetingStartTimeMillis = 0; // נשמור את זמן הפגישה במילי-שניות
+        long meetingStartTimeMillis = 0;
 
         try {
             SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
@@ -286,14 +317,12 @@ public class AddEvent extends AppCompatActivity {
         acceptedList.add(uid);
         event.setParticipantIds(acceptedList);
 
-        final long finalMeetingStartTime = meetingStartTimeMillis; // שומרים לשימוש ב-callback
+        final long finalMeetingStartTime = meetingStartTimeMillis;
 
         databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
-                // ברגע שהפגישה נוצרה ב-Firebase, אנחנו קובעים שעון מעורר ברקע!
                 scheduleNotification(event, finalMeetingStartTime);
-
                 Toast.makeText(AddEvent.this, "הפגישה נוצרה וההזמנות נשלחו", Toast.LENGTH_SHORT).show();
                 finish();
             }
@@ -305,12 +334,11 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
-    // הפונקציה החדשה שמחשבת וקובעת את ההתראה
     private void scheduleNotification(Event event, long meetingTimeInMillis) {
-        long alarmTime = meetingTimeInMillis - (15 * 60 * 1000); // 15 דקות לפני הפגישה
+        long alarmTime = meetingTimeInMillis - (15 * 60 * 1000);
 
         if (alarmTime < System.currentTimeMillis()) {
-            return; // הפגישה קרובה מדי, לא נגדיר התראה לעבר
+            return;
         }
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
