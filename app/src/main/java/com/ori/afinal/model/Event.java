@@ -12,11 +12,12 @@ public class Event {
     private String type;     // meeting / call / event
     private String location;
     private String status;   // ACTIVE / CANCELED / FINISHED
-    private double participationHours; // הוחלף מ- maxNumOfParticipants לטובת חישוב שעות
+    private double participationHours;
     private User eventAdmin;
     private List<String> participantIds; // משתתפים שאישרו
     private List<String> invitedParticipantIds; // מוזמנים שטרם אישרו
-    private List<String> declinedParticipantIds; // משתתפים שדחו הגעה (חדש!)
+    private List<String> declinedParticipantIds; // משתתפים שדחו הגעה
+    private List<String> trashedParticipantIds; // משתתפים שהעבירו את ההתראה לפח (חדש!)
 
     // חובה ל-Firebase
     public Event() {
@@ -24,6 +25,7 @@ public class Event {
         this.participantIds = new ArrayList<>();
         this.invitedParticipantIds = new ArrayList<>();
         this.declinedParticipantIds = new ArrayList<>();
+        this.trashedParticipantIds = new ArrayList<>();
     }
 
     // קונסטרקטור ליצירת אירוע חדש
@@ -48,6 +50,7 @@ public class Event {
         this.participantIds = new ArrayList<>();
         this.invitedParticipantIds = new ArrayList<>();
         this.declinedParticipantIds = new ArrayList<>();
+        this.trashedParticipantIds = new ArrayList<>();
     }
 
     // --- GETTERS & SETTERS ---
@@ -87,4 +90,7 @@ public class Event {
 
     public List<String> getDeclinedParticipantIds() { return declinedParticipantIds; }
     public void setDeclinedParticipantIds(List<String> declinedParticipantIds) { this.declinedParticipantIds = declinedParticipantIds; }
+
+    public List<String> getTrashedParticipantIds() { return trashedParticipantIds; }
+    public void setTrashedParticipantIds(List<String> trashedParticipantIds) { this.trashedParticipantIds = trashedParticipantIds; }
 }

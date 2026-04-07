@@ -9,8 +9,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -47,6 +49,11 @@ public class AddEvent extends AppCompatActivity {
     private Button btnSaveEvent, btnBack, btnAddParticipants;
     private TextView tvParticipantsList;
 
+    // כפתורי הניווט התחתון המרחף
+    private ImageButton navUpcoming, navHistory, navProgress, navNotifications, navAdd;
+    private View cvNotificationBadge;
+    private TextView tvNotificationBadgeCount;
+
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
 
@@ -82,12 +89,23 @@ public class AddEvent extends AppCompatActivity {
         btnAddParticipants = findViewById(R.id.btn_add_participants);
         tvParticipantsList = findViewById(R.id.tv_participants_list);
 
+        // חיבור רכיבי הניווט
+        navUpcoming = findViewById(R.id.nav_upcoming);
+        navHistory = findViewById(R.id.nav_history);
+        navProgress = findViewById(R.id.nav_progress);
+        navNotifications = findViewById(R.id.nav_notifications);
+        navAdd = findViewById(R.id.nav_add);
+        cvNotificationBadge = findViewById(R.id.cv_notification_badge);
+        tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
+
+        if (cvNotificationBadge != null) cvNotificationBadge.setVisibility(View.GONE);
+
         selectedDate = Calendar.getInstance();
 
         setupPickers();
         setupRadioGroupListener();
+        setupBottomNavigation(); // הפעלת הלוגיקה של הניווט התחתון
 
-        // כאן אנחנו בודקים אם הגענו מ"תבנית מהירה" וממלאים את הנתונים
         handleTemplateData();
 
         btnSaveEvent.setOnClickListener(v -> createEvent());
@@ -143,7 +161,6 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
-    // הפונקציה החדשה שמטפלת בתבניות (Routines)
     private void handleTemplateData() {
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("TEMPLATE_TITLE")) {
@@ -153,18 +170,15 @@ public class AddEvent extends AppCompatActivity {
             etTitle.setText(title);
 
             if (durationMinutes > 0) {
-                // קובע תאריך להיום
                 selectedDate = Calendar.getInstance();
                 SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                 etDatePicker.setText(sdfDate.format(selectedDate.getTime()));
 
-                // קובע שעת התחלה לעוד 5 דקות מהרגע הנוכחי
                 Calendar startCal = Calendar.getInstance();
                 startCal.add(Calendar.MINUTE, 5);
                 SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm", Locale.getDefault());
                 etStartTime.setText(sdfTime.format(startCal.getTime()));
 
-                // קובע שעת סיום לפי משך הזמן של התבנית
                 Calendar endCal = (Calendar) startCal.clone();
                 endCal.add(Calendar.MINUTE, durationMinutes);
                 etEndTime.setText(sdfTime.format(endCal.getTime()));
@@ -225,6 +239,38 @@ public class AddEvent extends AppCompatActivity {
                 etEndTime.setText(String.format(Locale.getDefault(), "%02d:%02d", timePicker.getHour(), timePicker.getMinute()));
             });
         });
+    }
+
+    private void setupBottomNavigation() {
+        navUpcoming.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomePage.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
+
+        navHistory.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HistoryActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
+
+        navProgress.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ProgressActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
+
+        navNotifications.setOnClickListener(v -> {
+            Intent intent = new Intent(this, NotificationsActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
+
+        // navAdd כרגע מבוטל כי אנחנו כבר בעמוד הזה
     }
 
     private void createEvent() {

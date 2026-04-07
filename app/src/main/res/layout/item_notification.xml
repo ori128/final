@@ -1,93 +1,165 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="0dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tv_notif_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="כותרת ההתראה"
-            android:textColor="#1F2937"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+        <View
+            android:id="@+id/view_indicator"
+            android:layout_width="4dp"
+            android:layout_height="0dp"
+            android:background="#3B82F6"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btn_notif_close"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="#1F2937"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/tv_notif_datetime"
-            android:layout_width="match_parent"
+            android:id="@+id/tv_event_time"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="תאריך ושעה"
-            android:textColor="#9CA3AF"
-            android:textSize="12sp" />
+            android:text="10:00"
+            android:textColor="#1F2937"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_notif_close" />
 
         <TextView
-            android:id="@+id/tv_notif_message"
-            android:layout_width="match_parent"
+            android:id="@+id/tv_event_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12/05/2026"
+            android:textColor="#6B7280"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_event_time" />
+
+        <TextView
+            android:id="@+id/tv_event_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:text="פגישת צוות"
+            android:textColor="#1F2937"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@+id/btn_notif_close"
+            app:layout_constraintStart_toEndOf="@+id/view_indicator"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_event_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/ic_launcher_background"
+            android:backgroundTint="#EBF5FF"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="Meeting"
+            android:textColor="#3B82F6"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@+id/tv_event_title"
+            app:layout_constraintTop_toBottomOf="@+id/tv_event_title" />
+
+        <TextView
+            android:id="@+id/tv_event_location"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="תוכן ההודעה יופיע כאן..."
-            android:textColor="#4B5563"
-            android:textSize="15sp" />
+            android:drawablePadding="4dp"
+            android:text="חדר ישיבות ראשי"
+            android:textColor="#6B7280"
+            android:textSize="14sp"
+            app:drawableStartCompat="@android:drawable/ic_menu_mylocation"
+            app:drawableTint="#9CA3AF"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/tv_event_title"
+            app:layout_constraintTop_toBottomOf="@+id/tv_event_type" />
+
+        <TextView
+            android:id="@+id/tv_event_participants_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="0/0"
+            android:textColor="#6B7280"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_event_location" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:id="@+id/ll_notif_actions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_event_participants_count">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_notif_reject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="דחייה"
+                android:textColor="#EF4444"
+                app:backgroundTint="#FEE2E2"
+                app:cornerRadius="8dp"
+                app:strokeColor="#EF4444"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_notif_accept"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="אישור"
+                android:textColor="#10B981"
+                app:backgroundTint="#D1FAE5"
+                app:cornerRadius="8dp"
+                app:strokeColor="#10B981"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_notif_time_passed"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:orientation="horizontal">
+            android:text="עבר זמן ההחלטה"
+            android:textColor="#F59E0B"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_event_participants_count" />
 
-            <LinearLayout
-                android:id="@+id/ll_invite_actions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="2"
-                android:visibility="visible">
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <Button
-                    android:id="@+id/btn_accept"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:backgroundTint="#10B981"
-                    android:text="אישור הגעה"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="8dp" />
-
-                <Button
-                    android:id="@+id/btn_decline"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:backgroundTint="#EF4444"
-                    android:text="דחייה"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="8dp" />
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/btn_dismiss"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="#E5E7EB"
-                android:text="הבנתי"
-                android:textColor="#374151"
-                android:visibility="gone"
-                app:cornerRadius="8dp" />
-
-        </LinearLayout>
-    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

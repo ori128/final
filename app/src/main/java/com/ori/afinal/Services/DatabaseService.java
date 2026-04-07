@@ -193,13 +193,18 @@ public class DatabaseService {
         });
     }
 
+    // מושך התראות שטרם נענו ושאינן בפח האשפה
     public void getUserNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
         getEventList(new DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> allEvents) {
                 List<Event> pendingEvents = new ArrayList<>();
                 for (Event event : allEvents) {
-                    if (event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId)) {
+                    boolean isInvited = event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId);
+                    boolean isTrashed = event.getTrashedParticipantIds() != null && event.getTrashedParticipantIds().contains(userId);
+
+                    // אם הוא מוזמן ועדיין לא העביר לפח -> להציג בהתראות
+                    if (isInvited && !isTrashed) {
                         pendingEvents.add(event);
                     }
                 }
@@ -210,25 +215,41 @@ public class DatabaseService {
         });
     }
 
-    // ====== הפונקציה החדשה להתראות! ======
+    // פונקציה חדשה: מושך התראות שטרם נענו ושהועברו לפח האשפה
+    public void getUserTrashedNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
+        getEventList(new DatabaseCallback<List<Event>>() {
+            @Override
+            public void onCompleted(List<Event> allEvents) {
+                List<Event> trashedEvents = new ArrayList<>();
+                for (Event event : allEvents) {
+                    boolean isInvited = event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId);
+                    boolean isTrashed = event.getTrashedParticipantIds() != null && event.getTrashedParticipantIds().contains(userId);
+
+                    if (isInvited && isTrashed) {
+                        trashedEvents.add(event);
+                    }
+                }
+                callback.onCompleted(trashedEvents);
+            }
+            @Override
+            public void onFailed(Exception e) { callback.onFailed(e); }
+        });
+    }
+
     public void getSmartNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Notification>> callback) {
         getDataList(NOTIFICATIONS_PATH, Notification.class, new DatabaseCallback<List<Notification>>() {
             @Override
             public void onCompleted(List<Notification> allNotifications) {
                 List<Notification> userNotifications = new ArrayList<>();
                 for (Notification notification : allNotifications) {
-                    // סינון ההתראות כך שנחזיר רק את ההתראות ששייכות למשתמש המחובר
                     if (notification.getUserId() != null && notification.getUserId().equals(userId)) {
                         userNotifications.add(notification);
                     }
                 }
                 callback.onCompleted(userNotifications);
             }
-
             @Override
-            public void onFailed(Exception e) {
-                callback.onFailed(e);
-            }
+            public void onFailed(Exception e) { callback.onFailed(e); }
         });
     }
 
@@ -252,6 +273,7 @@ public class DatabaseService {
         deleteData(NOTIFICATIONS_PATH + "/" + notificationId, callback);
     }
 
+    // עודכנה לטפל ב-declinedParticipantIds ולהסיר מהפח אם צריך
     public void respondToInvitation(@NotNull final String eventId, @NotNull final String userId, final boolean isAccepted, @Nullable final DatabaseCallback<Void> callback) {
         getEvent(eventId, new DatabaseCallback<Event>() {
             @Override
@@ -260,13 +282,19 @@ public class DatabaseService {
                     if (event.getInvitedParticipantIds() != null) {
                         event.getInvitedParticipantIds().remove(userId);
                     }
+                    if (event.getTrashedParticipantIds() != null) {
+                        event.getTrashedParticipantIds().remove(userId);
+                    }
 
                     if (isAccepted) {
-                        if (event.getParticipantIds() == null) {
-                            event.setParticipantIds(new ArrayList<>());
-                        }
+                        if (event.getParticipantIds() == null) event.setParticipantIds(new ArrayList<>());
                         if (!event.getParticipantIds().contains(userId)) {
                             event.getParticipantIds().add(userId);
+                        }
+                    } else {
+                        if (event.getDeclinedParticipantIds() == null) event.setDeclinedParticipantIds(new ArrayList<>());
+                        if (!event.getDeclinedParticipantIds().contains(userId)) {
+                            event.getDeclinedParticipantIds().add(userId);
                         }
                     }
 
@@ -276,6 +304,49 @@ public class DatabaseService {
                 }
             }
 
+            @Override
+            public void onFailed(Exception e) {
+                if (callback != null) callback.onFailed(e);
+            }
+        });
+    }
+
+    // פונקציה חדשה: העברה לפח האשפה
+    public void moveNotificationToTrash(@NotNull final String eventId, @NotNull final String userId, @Nullable final DatabaseCallback<Void> callback) {
+        getEvent(eventId, new DatabaseCallback<Event>() {
+            @Override
+            public void onCompleted(Event event) {
+                if (event != null) {
+                    if (event.getTrashedParticipantIds() == null) event.setTrashedParticipantIds(new ArrayList<>());
+                    if (!event.getTrashedParticipantIds().contains(userId)) {
+                        event.getTrashedParticipantIds().add(userId);
+                    }
+                    updateEvent(event, callback);
+                } else if (callback != null) {
+                    callback.onFailed(new Exception("Event not found"));
+                }
+            }
+            @Override
+            public void onFailed(Exception e) {
+                if (callback != null) callback.onFailed(e);
+            }
+        });
+    }
+
+    // פונקציה חדשה: שחזור מפח האשפה
+    public void restoreNotificationFromTrash(@NotNull final String eventId, @NotNull final String userId, @Nullable final DatabaseCallback<Void> callback) {
+        getEvent(eventId, new DatabaseCallback<Event>() {
+            @Override
+            public void onCompleted(Event event) {
+                if (event != null) {
+                    if (event.getTrashedParticipantIds() != null) {
+                        event.getTrashedParticipantIds().remove(userId);
+                    }
+                    updateEvent(event, callback);
+                } else if (callback != null) {
+                    callback.onFailed(new Exception("Event not found"));
+                }
+            }
             @Override
             public void onFailed(Exception e) {
                 if (callback != null) callback.onFailed(e);

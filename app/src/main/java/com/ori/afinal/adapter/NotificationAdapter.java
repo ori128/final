@@ -1,9 +1,11 @@
 package com.ori.afinal.adapter;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -11,10 +13,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.material.button.MaterialButton;
 import com.ori.afinal.R;
 import com.ori.afinal.Services.DatabaseService;
-import com.ori.afinal.model.Notification;
+import com.ori.afinal.model.Event;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,21 +26,19 @@ import java.util.Locale;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder> {
 
-    private List<Notification> notificationList = new ArrayList<>();
+    private List<Event> events = new ArrayList<>();
     private String currentUserId;
     private DatabaseService databaseService;
-    private Runnable onDataChanged;
+    private boolean isTrashMode = false;
 
-    public NotificationAdapter(Runnable onDataChanged) {
-        this.onDataChanged = onDataChanged;
+    public NotificationAdapter(String currentUserId, boolean isTrashMode) {
+        this.currentUserId = currentUserId;
+        this.isTrashMode = isTrashMode;
         this.databaseService = DatabaseService.getInstance();
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        }
     }
 
-    public void setNotifications(List<Notification> notifications) {
-        this.notificationList = notifications;
+    public void setEvents(List<Event> events) {
+        this.events = events;
         notifyDataSetChanged();
     }
 
@@ -51,101 +51,156 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     @Override
     public void onBindViewHolder(@NonNull NotificationViewHolder holder, int position) {
-        Notification notification = notificationList.get(position);
+        Event event = events.get(position);
+        Context context = holder.itemView.getContext();
 
-        holder.tvTitle.setText(notification.getTitle());
-        holder.tvMessage.setText(notification.getMessage());
+        holder.tvTitle.setText(event.getTitle());
+        holder.tvLocation.setText(event.getLocation());
+        holder.tvType.setText(event.getType());
 
-        // המרת ה-Timestamp לתאריך קריא
-        if (notification.getTimestamp() > 0) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            String dateStr = sdf.format(new Date(notification.getTimestamp()));
-            holder.tvDateTime.setText(dateStr);
-        } else {
-            holder.tvDateTime.setVisibility(View.GONE);
+        // תאריך ושעה
+        if (event.getDateTime() != null) {
+            String[] dateTimeParts = event.getDateTime().split(" ");
+            if (dateTimeParts.length == 2) {
+                holder.tvTime.setText(dateTimeParts[1]);
+                holder.tvDate.setText(dateTimeParts[0]);
+            }
         }
 
-        // בדיקה איזה כפתורים להציג לפי סוג ההתראה
-        if ("INVITE".equals(notification.getType())) {
-            holder.llInviteActions.setVisibility(View.VISIBLE);
-            holder.btnDismiss.setVisibility(View.GONE);
+        // משתתפים
+        int participants = event.getParticipantIds() != null ? event.getParticipantIds().size() : 0;
+        int invited = event.getInvitedParticipantIds() != null ? event.getInvitedParticipantIds().size() : 0;
+        holder.tvParticipants.setText(participants + "/" + (participants + invited));
 
-            // טיפול באישור הגעה
-            holder.btnAccept.setOnClickListener(v -> {
-                respondToInviteAndRemoveNotification(notification, true, v);
-            });
+        // בדיקת זמן שעבר
+        checkIfTimePassed(event, holder);
 
-            // טיפול בדחיית הגעה
-            holder.btnDecline.setOnClickListener(v -> {
-                respondToInviteAndRemoveNotification(notification, false, v);
-            });
+        // כפתור איקס / שחזור
+        holder.btnClose.setOnClickListener(v -> {
+            if (isTrashMode) {
+                showRestoreDialog(context, event);
+            } else {
+                showDeleteConfirmDialog(context, event);
+            }
+        });
 
-        } else {
-            // זו התראת מידע (INFO / UPDATE / REMOVED)
-            holder.llInviteActions.setVisibility(View.GONE);
-            holder.btnDismiss.setVisibility(View.VISIBLE);
+        // כפתורי אישור ודחייה
+        holder.btnAccept.setOnClickListener(v -> respond(event, true, context));
+        holder.btnReject.setOnClickListener(v -> respond(event, false, context));
 
-            // לחיצה על "הבנתי" פשוט מוחקת את ההתראה מהמסד
-            holder.btnDismiss.setOnClickListener(v -> {
-                databaseService.deleteNotification(notification.getId(), new DatabaseService.DatabaseCallback<Void>() {
-                    @Override
-                    public void onCompleted(Void object) {
-                        if (onDataChanged != null) onDataChanged.run();
-                    }
-                    @Override
-                    public void onFailed(Exception e) {}
-                });
-            });
+        if (isTrashMode) {
+            holder.btnClose.setImageResource(android.R.drawable.ic_menu_revert);
+            holder.llActions.setVisibility(View.GONE);
         }
     }
 
-    private void respondToInviteAndRemoveNotification(Notification notification, boolean isAccepted, View view) {
-        if (currentUserId == null || notification.getEventId() == null) return;
+    // --- לוגיקה לעדכון חי של הרשימה ---
+    private void removeItem(Event event) {
+        int position = events.indexOf(event);
+        if (position != -1) {
+            events.remove(position);
+            notifyItemRemoved(position);
+            // מבטיח שהאנימציה תהיה חלקה ושהאינדקסים של שאר הפריטים יתעדכנו
+            notifyItemRangeChanged(position, events.size());
+        }
+    }
 
-        // 1. עדכון מצב המשתמש בפגישה (אישר/דחה)
-        databaseService.respondToInvitation(notification.getEventId(), currentUserId, isAccepted, new DatabaseService.DatabaseCallback<Void>() {
+    private void checkIfTimePassed(Event event, NotificationViewHolder holder) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            Date eventDate = sdf.parse(event.getDateTime());
+            if (eventDate != null && eventDate.before(new Date())) {
+                holder.llActions.setVisibility(View.GONE);
+                holder.tvTimePassed.setVisibility(View.VISIBLE);
+                if (isTrashMode) holder.btnClose.setVisibility(View.GONE);
+            } else if (!isTrashMode) {
+                holder.llActions.setVisibility(View.VISIBLE);
+                holder.tvTimePassed.setVisibility(View.GONE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showDeleteConfirmDialog(Context context, Event event) {
+        new AlertDialog.Builder(context)
+                .setTitle("מחיקת התראה")
+                .setMessage("האם להעביר את ההתראה לפח האשפה?")
+                .setPositiveButton("העבר לפח", (dialog, which) -> {
+                    databaseService.moveNotificationToTrash(event.getId(), currentUserId, new DatabaseService.DatabaseCallback<Void>() {
+                        @Override
+                        public void onCompleted(Void object) {
+                            removeItem(event); // נעלם מהמסך מיד!
+                            Toast.makeText(context, "הועבר לפח", Toast.LENGTH_SHORT).show();
+                        }
+                        @Override
+                        public void onFailed(Exception e) {
+                            Toast.makeText(context, "שגיאה בפעולה", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("ביטול", null)
+                .show();
+    }
+
+    private void showRestoreDialog(Context context, Event event) {
+        new AlertDialog.Builder(context)
+                .setTitle("שחזור התראה")
+                .setMessage("האם להחזיר את ההתראה לרשימה הראשית?")
+                .setPositiveButton("שחזר", (dialog, which) -> {
+                    databaseService.restoreNotificationFromTrash(event.getId(), currentUserId, new DatabaseService.DatabaseCallback<Void>() {
+                        @Override
+                        public void onCompleted(Void object) {
+                            removeItem(event); // נעלם מהפח מיד!
+                            Toast.makeText(context, "שוחזר בהצלחה", Toast.LENGTH_SHORT).show();
+                        }
+                        @Override
+                        public void onFailed(Exception e) {
+                            Toast.makeText(context, "שגיאה בשחזור", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("ביטול", null)
+                .show();
+    }
+
+    private void respond(Event event, boolean accept, Context context) {
+        databaseService.respondToInvitation(event.getId(), currentUserId, accept, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
-                String msg = isAccepted ? "אישרת הגעה לפגישה!" : "דחית את ההזמנה.";
-                Toast.makeText(view.getContext(), msg, Toast.LENGTH_SHORT).show();
-
-                // 2. מחיקת ההתראה עצמה אחרי שהגבנו לה
-                databaseService.deleteNotification(notification.getId(), new DatabaseService.DatabaseCallback<Void>() {
-                    @Override
-                    public void onCompleted(Void object) {
-                        if (onDataChanged != null) onDataChanged.run();
-                    }
-                    @Override
-                    public void onFailed(Exception e) {}
-                });
+                removeItem(event); // נעלם מהמסך מיד אחרי החלטה!
+                String msg = accept ? "הפגישה אושרה!" : "הפגישה נדחתה";
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
             }
-
             @Override
             public void onFailed(Exception e) {
-                Toast.makeText(view.getContext(), "שגיאה בביצוע הפעולה", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "שגיאה בעדכון", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     @Override
-    public int getItemCount() {
-        return notificationList.size();
-    }
+    public int getItemCount() { return events.size(); }
 
-    static class NotificationViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvDateTime, tvMessage;
-        LinearLayout llInviteActions;
-        Button btnAccept, btnDecline, btnDismiss;
+    public static class NotificationViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTitle, tvType, tvLocation, tvTime, tvDate, tvParticipants, tvTimePassed;
+        ImageButton btnClose;
+        MaterialButton btnAccept, btnReject;
+        LinearLayout llActions;
 
         public NotificationViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTitle = itemView.findViewById(R.id.tv_notif_title);
-            tvDateTime = itemView.findViewById(R.id.tv_notif_datetime);
-            tvMessage = itemView.findViewById(R.id.tv_notif_message);
-            llInviteActions = itemView.findViewById(R.id.ll_invite_actions);
-            btnAccept = itemView.findViewById(R.id.btn_accept);
-            btnDecline = itemView.findViewById(R.id.btn_decline);
-            btnDismiss = itemView.findViewById(R.id.btn_dismiss);
+            tvTitle = itemView.findViewById(R.id.tv_event_title);
+            tvType = itemView.findViewById(R.id.tv_event_type);
+            tvLocation = itemView.findViewById(R.id.tv_event_location);
+            tvTime = itemView.findViewById(R.id.tv_event_time);
+            tvDate = itemView.findViewById(R.id.tv_event_date);
+            tvParticipants = itemView.findViewById(R.id.tv_event_participants_count);
+            tvTimePassed = itemView.findViewById(R.id.tv_notif_time_passed);
+            btnClose = itemView.findViewById(R.id.btn_notif_close);
+            btnAccept = itemView.findViewById(R.id.btn_notif_accept);
+            btnReject = itemView.findViewById(R.id.btn_notif_reject);
+            llActions = itemView.findViewById(R.id.ll_notif_actions);
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.ori.afinal;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,7 +17,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.Services.DatabaseService;
@@ -43,14 +41,12 @@ public class HomePage extends AppCompatActivity {
     private TextView tvListHeader, tvEmptyText;
     private View cvNotificationBadge;
     private RecyclerView rvEvents, rvTemplates;
-    private FloatingActionButton fabAddEvent;
     private SearchView svEvents;
 
     private View btnProfile;
-    private ImageButton navUpcoming, navHistory, navNotifications;
+    private ImageButton navUpcoming, navHistory, navProgress, navNotifications, navAdd;
 
     private CircularProgressIndicator progressMeetings, progressHours;
-
     private View cvLiveMeeting;
     private TextView tvLiveTitle, tvLiveTime;
     private View llEmptyState;
@@ -97,7 +93,6 @@ public class HomePage extends AppCompatActivity {
         loadNotificationsCount();
     }
 
-    // הוספנו תמיכה לחזרה ממסך ההתראות!
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -117,27 +112,25 @@ public class HomePage extends AppCompatActivity {
 
         tvStatsCount = findViewById(R.id.tv_stats_count);
         tvStatsDuration = findViewById(R.id.tv_stats_duration);
-        fabAddEvent = findViewById(R.id.fab_add_event);
         rvEvents = findViewById(R.id.rv_events);
         rvTemplates = findViewById(R.id.rv_templates);
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
         svEvents = findViewById(R.id.sv_events);
-
         tvListHeader = findViewById(R.id.tv_list_header);
         tvEmptyText = findViewById(R.id.tv_empty_text);
 
         navUpcoming = findViewById(R.id.nav_upcoming);
         navHistory = findViewById(R.id.nav_history);
+        navProgress = findViewById(R.id.nav_progress);
         navNotifications = findViewById(R.id.nav_notifications);
+        navAdd = findViewById(R.id.nav_add);
 
         progressMeetings = findViewById(R.id.progress_meetings);
         progressHours = findViewById(R.id.progress_hours);
-
         cvLiveMeeting = findViewById(R.id.cv_live_meeting);
         tvLiveTitle = findViewById(R.id.tv_live_title);
         tvLiveTime = findViewById(R.id.tv_live_time);
-
         llEmptyState = findViewById(R.id.ll_empty_state);
 
         com.airbnb.lottie.LottieAnimationView lottieEmpty = findViewById(R.id.lottie_empty);
@@ -164,19 +157,11 @@ public class HomePage extends AppCompatActivity {
             svEvents.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) { return false; }
-
                 @Override
                 public boolean onQueryTextChange(String newText) {
                     filterEvents(newText);
                     return true;
                 }
-            });
-        }
-
-        if (fabAddEvent != null) {
-            fabAddEvent.setOnClickListener(v -> {
-                Intent intent = new Intent(HomePage.this, AddEvent.class);
-                startActivity(intent);
             });
         }
 
@@ -188,40 +173,33 @@ public class HomePage extends AppCompatActivity {
     private void setupDateTime() {
         SimpleDateFormat sdfDay = new SimpleDateFormat("EEEE", new Locale("he", "IL"));
         SimpleDateFormat sdfDate = new SimpleDateFormat("d MMMM", new Locale("he", "IL"));
-
         if (tvDay != null) tvDay.setText(sdfDay.format(new Date()));
         if (tvDate != null) tvDate.setText(sdfDate.format(new Date()));
     }
 
     private void setupBottomNavigation() {
         navUpcoming.setOnClickListener(v -> {
-            isShowingHistory = false;
-            navUpcoming.setColorFilter(Color.parseColor("#3B82F6"));
-            navHistory.setColorFilter(Color.parseColor("#6B7280"));
-            navNotifications.setColorFilter(Color.parseColor("#6B7280"));
-
-            tvListHeader.setText("הפגישות הקרובות");
-            tvEmptyText.setText("אין לך פגישות קרובות...\nזה הזמן לנוח! ☕");
-
             String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
             filterEvents(currentQuery);
         });
 
         navHistory.setOnClickListener(v -> {
-            isShowingHistory = true;
-            navHistory.setColorFilter(Color.parseColor("#3B82F6"));
-            navUpcoming.setColorFilter(Color.parseColor("#6B7280"));
-            navNotifications.setColorFilter(Color.parseColor("#6B7280"));
+            Intent intent = new Intent(HomePage.this, HistoryActivity.class);
+            startActivity(intent);
+        });
 
-            tvListHeader.setText("היסטוריית פגישות");
-            tvEmptyText.setText("היסטוריית הפגישות שלך ריקה...");
-
-            String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
-            filterEvents(currentQuery);
+        navProgress.setOnClickListener(v -> {
+            Intent intent = new Intent(HomePage.this, ProgressActivity.class);
+            startActivity(intent);
         });
 
         navNotifications.setOnClickListener(v -> {
             Intent intent = new Intent(HomePage.this, NotificationsActivity.class);
+            startActivity(intent);
+        });
+
+        navAdd.setOnClickListener(v -> {
+            Intent intent = new Intent(HomePage.this, AddEvent.class);
             startActivity(intent);
         });
     }
@@ -239,7 +217,6 @@ public class HomePage extends AppCompatActivity {
             intent.putExtra("TEMPLATE_DURATION", template.getDurationMinutes());
             startActivity(intent);
         });
-
         rvTemplates.setAdapter(templateAdapter);
     }
 
@@ -257,36 +234,25 @@ public class HomePage extends AppCompatActivity {
 
         for (Event event : fullEventsList) {
             boolean isPastEvent = false;
-
             try {
                 if (event.getDateTime() != null) {
                     Date startDate = sdfFull.parse(event.getDateTime());
                     if (startDate != null) {
-                        long startMillis = startDate.getTime();
-                        long endMillis = startMillis + (long) (event.getParticipationHours() * 60 * 60 * 1000);
-                        if (currentTime > endMillis) {
-                            isPastEvent = true;
-                        }
+                        long endMillis = startDate.getTime() + (long) (event.getParticipationHours() * 60 * 60 * 1000);
+                        if (currentTime > endMillis) isPastEvent = true;
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
 
             if (isShowingHistory && !isPastEvent) continue;
             if (!isShowingHistory && isPastEvent) continue;
 
-            boolean isMatch = false;
-            if (text.isEmpty()) {
-                isMatch = true;
-            } else {
+            boolean isMatch = text.isEmpty();
+            if (!isMatch) {
                 if (event.getTitle() != null && event.getTitle().toLowerCase().contains(text.toLowerCase())) isMatch = true;
                 if (event.getLocation() != null && event.getLocation().toLowerCase().contains(text.toLowerCase())) isMatch = true;
             }
-
-            if (isMatch) {
-                filteredList.add(event);
-            }
+            if (isMatch) filteredList.add(event);
         }
 
         if (filteredList.isEmpty()) {
@@ -296,13 +262,11 @@ public class HomePage extends AppCompatActivity {
             rvEvents.setVisibility(View.VISIBLE);
             llEmptyState.setVisibility(View.GONE);
         }
-
         if (eventAdapter != null) eventAdapter.setEvents(filteredList);
     }
 
     private void showLogoutDialog() {
         if (isFinishing() || isDestroyed()) return;
-
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("אזור אישי")
                 .setMessage("האם אתה בטוח שברצונך להתנתק מהמערכת?")
@@ -312,9 +276,7 @@ public class HomePage extends AppCompatActivity {
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
-                })
-                .setNegativeButton("ביטול", null)
-                .show();
+                }).setNegativeButton("ביטול", null).show();
     }
 
     private void loadUserData() {
@@ -336,7 +298,6 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onCompleted(List<Event> events) {
                 if (isFinishing() || isDestroyed()) return;
-
                 fullEventsList.clear();
                 double totalDuration = 0;
                 int completedMeetingsCount = 0;
@@ -345,36 +306,26 @@ public class HomePage extends AppCompatActivity {
                     long currentTime = System.currentTimeMillis();
                     SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
                     SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm", Locale.getDefault());
-
                     Event liveEvent = null;
                     long liveEventEndTimeMillis = 0;
 
                     for (Event event : events) {
                         fullEventsList.add(event);
-
                         try {
                             if (event.getDateTime() != null) {
                                 Date startDate = sdfFull.parse(event.getDateTime());
                                 if (startDate != null) {
                                     long startMillis = startDate.getTime();
                                     long endMillis = startMillis + (long) (event.getParticipationHours() * 60 * 60 * 1000);
-
                                     if (liveEvent == null && currentTime >= startMillis && currentTime <= endMillis) {
                                         liveEvent = event;
                                         liveEventEndTimeMillis = endMillis;
                                     }
-
-                                    if (currentTime >= startMillis) {
-                                        totalDuration += event.getParticipationHours();
-                                    }
-                                    if (currentTime > endMillis) {
-                                        completedMeetingsCount++;
-                                    }
+                                    if (currentTime >= startMillis) totalDuration += event.getParticipationHours();
+                                    if (currentTime > endMillis) completedMeetingsCount++;
                                 }
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        } catch (Exception e) { e.printStackTrace(); }
                     }
 
                     if (liveEvent != null) {
@@ -384,10 +335,7 @@ public class HomePage extends AppCompatActivity {
                     } else {
                         cvLiveMeeting.setVisibility(View.GONE);
                     }
-
-                    if (tvPoints != null) {
-                        tvPoints.setText(String.valueOf(completedMeetingsCount * 10));
-                    }
+                    if (tvPoints != null) tvPoints.setText(String.valueOf(completedMeetingsCount * 10));
                 }
 
                 String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
@@ -432,7 +380,6 @@ public class HomePage extends AppCompatActivity {
             }
             @Override
             public void onFailed(Exception e) {
-                Log.e(TAG, "Failed to load notifications count", e);
                 if (cvNotificationBadge != null) cvNotificationBadge.setVisibility(View.GONE);
             }
         });
