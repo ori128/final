@@ -119,7 +119,8 @@ public class EventDetails extends AppCompatActivity {
     }
 
     private void loadParticipantsNames(Event event) {
-        databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
+        // התיקון הקריטי: קוראים לפונקציה החדשה getAllUsers במקום הישנה
+        databaseService.getAllUsers(new DatabaseService.DatabaseCallback<List<User>>() {
             @Override
             public void onCompleted(List<User> users) {
                 llParticipants.removeAllViews();

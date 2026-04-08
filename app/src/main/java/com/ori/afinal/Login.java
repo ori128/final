@@ -83,7 +83,7 @@ public class Login extends AppCompatActivity {
                     public void onCompleted(User user) {
                         if (user != null && Boolean.TRUE.equals(user.getAdmin())) {
                             // המשתמש הוא מנהל
-                            startActivity(new Intent(Login.this, MainAdmin.class));
+                            startActivity(new Intent(Login.this, HomePage.class));
                         } else {
                             // משתמש רגיל
                             startActivity(new Intent(Login.this, HomePage.class));

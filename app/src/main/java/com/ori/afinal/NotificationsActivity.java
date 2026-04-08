@@ -29,11 +29,11 @@ public class NotificationsActivity extends AppCompatActivity {
     private static final String TAG = "NotificationsActivity";
 
     private RecyclerView rvNotifications;
-    private View llEmptyState; // שונה מ-TextView ל-View כי זה עכשיו Layout
+    private View llEmptyState;
     private SearchView svNotifications;
     private ImageButton btnGoToTrash;
 
-    private NotificationAdapter adapter; // שימוש באדפטר החדש!
+    private NotificationAdapter adapter;
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
     private String currentUserId;
@@ -50,7 +50,6 @@ public class NotificationsActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notifications);
 
-        // תיקון ה-Padding עבור ה-RecyclerView
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rv_notifications), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom + 100);
@@ -87,12 +86,22 @@ public class NotificationsActivity extends AppCompatActivity {
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
 
-        // הגדרת האדפטר החדש של ההתראות (isTrashMode = false)
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         adapter = new NotificationAdapter(currentUserId, false);
         rvNotifications.setAdapter(adapter);
 
-        // הגדרת החיפוש
+        // חיבור המאזין לעדכון ה-Badge והפנדה בזמן אמת!
+        adapter.setOnNotificationChangedListener(new NotificationAdapter.OnNotificationChangedListener() {
+            @Override
+            public void onNotificationCountChanged(int newCount) {
+                updateBadge(newCount);
+                if (newCount == 0) {
+                    rvNotifications.setVisibility(View.GONE);
+                    llEmptyState.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
         svNotifications.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) { return false; }
@@ -109,7 +118,6 @@ public class NotificationsActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // הגדרת הפנדה (למניעת קריסה)
         com.airbnb.lottie.LottieAnimationView lottiePanda = findViewById(R.id.lottie_panda);
         if (lottiePanda != null) {
             lottiePanda.setFontAssetDelegate(new com.airbnb.lottie.FontAssetDelegate() {

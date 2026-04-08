@@ -3,63 +3,78 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:layoutDirection="rtl">
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/tv_admin_event_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
-            android:text="כותרת פגישה"
+            android:text="כותרת הפגישה"
             android:textColor="#1F2937"
             android:textSize="18sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/btn_admin_delete_event"
+            app:layout_constraintEnd_toStartOf="@id/ll_event_actions"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/tv_admin_event_date"
+            android:id="@+id/tv_admin_event_datetime"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="תאריך ושעה"
-            android:textColor="#4B5563"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="@+id/tv_admin_event_title"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_admin_event_title" />
-
-        <TextView
-            android:id="@+id/tv_admin_event_location"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="מיקום"
+            android:text="12/05/2026 14:00"
             android:textColor="#6B7280"
             android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="@+id/tv_admin_event_title"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_admin_event_date" />
+            app:layout_constraintTop_toBottomOf="@id/tv_admin_event_title" />
 
-        <ImageButton
-            android:id="@+id/btn_admin_delete_event"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_delete"
-            app:tint="#DC2626"
+        <TextView
+            android:id="@+id/tv_admin_event_id"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="מזהה פגישה..."
+            android:textColor="#9CA3AF"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_admin_event_datetime" />
+
+        <LinearLayout
+            android:id="@+id/ll_event_actions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btn_admin_edit_event"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="#3B82F6" />
+
+            <ImageButton
+                android:id="@+id/btn_admin_delete_event"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_delete"
+                app:tint="#EF4444" />
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

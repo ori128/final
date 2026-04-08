@@ -7,6 +7,7 @@ public class User {
     String phone;
     String email;
     String password;
+    String fullName; // הוספנו את השדה הרשמי
     Boolean admin;
 
     public Boolean getAdmin() {
@@ -14,7 +15,7 @@ public class User {
     }
 
     public void setAdmin(Boolean admin) {
-        this.admin = admin; // תוקן באג השמה
+        this.admin = admin;
     }
 
     public User(String id, String fname, String lname, String phone, String email, String password, Boolean admin) {
@@ -25,6 +26,7 @@ public class User {
         this.email = email;
         this.password = password;
         this.admin = admin;
+        this.fullName = fname + " " + lname; // מתעדכן אוטומטית ביצירה
     }
 
     public User(String id, String fname, String lname, String phone, String email, String password) {
@@ -34,6 +36,7 @@ public class User {
         this.phone = phone;
         this.email = email;
         this.password = password;
+        this.fullName = fname + " " + lname;
     }
 
     public User() {
@@ -43,11 +46,18 @@ public class User {
         this.id = id;
         this.fname = fname;
         this.lname = lname;
+        this.fullName = fname + " " + lname;
     }
 
-    public String getFullName (){
-        return (fname + " " + lname);
+    // --- הנה התיקון הקריטי שמונע שגיאות ---
+    public String getFullName() {
+        return fullName;
     }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+    // --------------------------------------
 
     public String getId() {
         return id;
@@ -63,6 +73,7 @@ public class User {
 
     public void setFname(String fname) {
         this.fname = fname;
+        this.fullName = this.fname + " " + this.lname; // מתעדכן אוטומטית
     }
 
     public String getLname() {
@@ -71,6 +82,7 @@ public class User {
 
     public void setLname(String lname) {
         this.lname = lname;
+        this.fullName = this.fname + " " + this.lname; // מתעדכן אוטומטית
     }
 
     public String getPhone() {
@@ -106,10 +118,11 @@ public class User {
                 ", phone='" + phone + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
+                ", fullName='" + fullName + '\'' +
                 '}';
     }
 
     public void setUid(String uid) {
-        this.id = uid; // תוקן באג: הפונקציה הייתה ריקה מקודם
+        this.id = uid;
     }
 }

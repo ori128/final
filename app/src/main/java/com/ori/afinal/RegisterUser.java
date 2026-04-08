@@ -17,6 +17,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.model.User;
 
@@ -28,6 +30,7 @@ public class RegisterUser extends AppCompatActivity {
     private ImageButton btnBackMain;
 
     private DatabaseService databaseService;
+    private FirebaseAuth mAuth; // הוספנו את מערכת ההזדהות של פיירבייס
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +45,7 @@ public class RegisterUser extends AppCompatActivity {
         });
 
         databaseService = DatabaseService.getInstance();
+        mAuth = FirebaseAuth.getInstance(); // אתחול מערכת ההזדהות
         initViews();
     }
 
@@ -103,21 +107,42 @@ public class RegisterUser extends AppCompatActivity {
             return;
         }
 
-        // אם הכל תקין, ממשיכים ליצירת המשתמש
-        User user = new User("", fname, lname, phone, email, password, false);
+        // השבתת הכפתור כדי למנוע לחיצות כפולות
+        btnRegister.setEnabled(false);
 
-        databaseService.createNewUser(user, new DatabaseService.DatabaseCallback<String>() {
-            @Override
-            public void onCompleted(String uid) {
-                Toast.makeText(RegisterUser.this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(RegisterUser.this, HomePage.class));
-                finish();
-            }
+        // 5. יצירת המשתמש ב-Firebase Auth קודם כל!
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        // המשתמש נוצר בהצלחה במערכת ההזדהות, נשלוף את ה-ID שלו
+                        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+                        if (firebaseUser != null) {
+                            String uid = firebaseUser.getUid();
 
-            @Override
-            public void onFailed(Exception e) {
-                Toast.makeText(RegisterUser.this, "שגיאה בהרשמה: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                            // ניצור את אובייקט המשתמש עם כל הפרטים למסד הנתונים
+                            User user = new User(uid, fname, lname, phone, email, password, false);
+
+                            // שומרים את הנתונים ב-Realtime Database
+                            databaseService.saveUser(user, new DatabaseService.DatabaseCallback<Void>() {
+                                @Override
+                                public void onCompleted(Void object) {
+                                    Toast.makeText(RegisterUser.this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
+                                    startActivity(new Intent(RegisterUser.this, HomePage.class));
+                                    finish();
+                                }
+
+                                @Override
+                                public void onFailed(Exception e) {
+                                    btnRegister.setEnabled(true);
+                                    Toast.makeText(RegisterUser.this, "שגיאה בשמירת נתונים: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                    } else {
+                        // במקרה שהאימייל תפוס או שגיאה אחרת
+                        btnRegister.setEnabled(true);
+                        Toast.makeText(RegisterUser.this, "שגיאה בהרשמה: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 }

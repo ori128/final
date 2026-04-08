@@ -89,7 +89,6 @@ public class AddEvent extends AppCompatActivity {
         btnAddParticipants = findViewById(R.id.btn_add_participants);
         tvParticipantsList = findViewById(R.id.tv_participants_list);
 
-        // חיבור רכיבי הניווט
         navUpcoming = findViewById(R.id.nav_upcoming);
         navHistory = findViewById(R.id.nav_history);
         navProgress = findViewById(R.id.nav_progress);
@@ -104,7 +103,7 @@ public class AddEvent extends AppCompatActivity {
 
         setupPickers();
         setupRadioGroupListener();
-        setupBottomNavigation(); // הפעלת הלוגיקה של הניווט התחתון
+        setupBottomNavigation();
 
         handleTemplateData();
 
@@ -112,7 +111,7 @@ public class AddEvent extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         btnAddParticipants.setOnClickListener(v -> {
-            databaseService.getUserList(new DatabaseService.DatabaseCallback<List<User>>() {
+            databaseService.getAllUsers(new DatabaseService.DatabaseCallback<List<User>>() {
                 @Override
                 public void onCompleted(List<User> users) {
                     if (users == null || users.isEmpty()) {
@@ -269,8 +268,6 @@ public class AddEvent extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
-
-        // navAdd כרגע מבוטל כי אנחנו כבר בעמוד הזה
     }
 
     private void createEvent() {
@@ -352,8 +349,10 @@ public class AddEvent extends AppCompatActivity {
 
         String dateTime = date + " " + startTime;
 
+        // התיקון הקריטי: אנחנו משאירים את ה-ID ריק ("").
+        // פונקציית saveEvent של ה-DatabaseService תייצר לו ID אוטומטית!
         Event event = new Event(
-                databaseService.generateEventId(), title, description, dateTime, type, location, calculatedHours, admin
+                "", title, description, dateTime, type, location, calculatedHours, admin
         );
 
         if (selectedParticipantIds.contains(uid)) selectedParticipantIds.remove(uid);
@@ -365,7 +364,8 @@ public class AddEvent extends AppCompatActivity {
 
         final long finalMeetingStartTime = meetingStartTimeMillis;
 
-        databaseService.createNewEvent(event, new DatabaseService.DatabaseCallback<Void>() {
+        // התיקון השני: שימוש ב-saveEvent הרשמי
+        databaseService.saveEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
                 scheduleNotification(event, finalMeetingStartTime);

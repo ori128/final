@@ -31,10 +31,19 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     private DatabaseService databaseService;
     private boolean isTrashMode = false;
 
+    public interface OnNotificationChangedListener {
+        void onNotificationCountChanged(int newCount);
+    }
+    private OnNotificationChangedListener listener;
+
     public NotificationAdapter(String currentUserId, boolean isTrashMode) {
         this.currentUserId = currentUserId;
         this.isTrashMode = isTrashMode;
         this.databaseService = DatabaseService.getInstance();
+    }
+
+    public void setOnNotificationChangedListener(OnNotificationChangedListener listener) {
+        this.listener = listener;
     }
 
     public void setEvents(List<Event> events) {
@@ -58,7 +67,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.tvLocation.setText(event.getLocation());
         holder.tvType.setText(event.getType());
 
-        // תאריך ושעה
         if (event.getDateTime() != null) {
             String[] dateTimeParts = event.getDateTime().split(" ");
             if (dateTimeParts.length == 2) {
@@ -67,41 +75,42 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             }
         }
 
-        // משתתפים
         int participants = event.getParticipantIds() != null ? event.getParticipantIds().size() : 0;
         int invited = event.getInvitedParticipantIds() != null ? event.getInvitedParticipantIds().size() : 0;
         holder.tvParticipants.setText(participants + "/" + (participants + invited));
 
-        // בדיקת זמן שעבר
-        checkIfTimePassed(event, holder);
+        // לוגיקת הפח
+        if (isTrashMode) {
+            holder.llActions.setVisibility(View.GONE);
+            holder.btnRestore.setVisibility(View.VISIBLE);
 
-        // כפתור איקס / שחזור
-        holder.btnClose.setOnClickListener(v -> {
-            if (isTrashMode) {
-                showRestoreDialog(context, event);
-            } else {
-                showDeleteConfirmDialog(context, event);
-            }
-        });
+            // X בפח מוחק לצמיתות
+            holder.btnClose.setOnClickListener(v -> showPermanentDeleteDialog(context, event));
+            holder.btnRestore.setOnClickListener(v -> showRestoreDialog(context, event));
+        } else {
+            holder.btnRestore.setVisibility(View.GONE);
+            // X רגיל מעביר לפח
+            holder.btnClose.setOnClickListener(v -> showDeleteConfirmDialog(context, event));
+        }
 
-        // כפתורי אישור ודחייה
+        // כפתורי אישור/דחייה רגילים
         holder.btnAccept.setOnClickListener(v -> respond(event, true, context));
         holder.btnReject.setOnClickListener(v -> respond(event, false, context));
 
-        if (isTrashMode) {
-            holder.btnClose.setImageResource(android.R.drawable.ic_menu_revert);
-            holder.llActions.setVisibility(View.GONE);
-        }
+        // בדיקת זמנים בסוף (כדי לדרוס את הכפתורים אם הזמן עבר)
+        checkIfTimePassed(event, holder);
     }
 
-    // --- לוגיקה לעדכון חי של הרשימה ---
     private void removeItem(Event event) {
         int position = events.indexOf(event);
         if (position != -1) {
             events.remove(position);
             notifyItemRemoved(position);
-            // מבטיח שהאנימציה תהיה חלקה ושהאינדקסים של שאר הפריטים יתעדכנו
             notifyItemRangeChanged(position, events.size());
+
+            if (listener != null) {
+                listener.onNotificationCountChanged(events.size());
+            }
         }
     }
 
@@ -109,10 +118,16 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
             Date eventDate = sdf.parse(event.getDateTime());
+
             if (eventDate != null && eventDate.before(new Date())) {
+                // הזמן עבר!
                 holder.llActions.setVisibility(View.GONE);
                 holder.tvTimePassed.setVisibility(View.VISIBLE);
-                if (isTrashMode) holder.btnClose.setVisibility(View.GONE);
+
+                if (isTrashMode) {
+                    // אי אפשר לשחזר פגישה ישנה! אבל אפשר למחוק
+                    holder.btnRestore.setVisibility(View.GONE);
+                }
             } else if (!isTrashMode) {
                 holder.llActions.setVisibility(View.VISIBLE);
                 holder.tvTimePassed.setVisibility(View.GONE);
@@ -130,7 +145,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     databaseService.moveNotificationToTrash(event.getId(), currentUserId, new DatabaseService.DatabaseCallback<Void>() {
                         @Override
                         public void onCompleted(Void object) {
-                            removeItem(event); // נעלם מהמסך מיד!
+                            removeItem(event);
                             Toast.makeText(context, "הועבר לפח", Toast.LENGTH_SHORT).show();
                         }
                         @Override
@@ -151,7 +166,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     databaseService.restoreNotificationFromTrash(event.getId(), currentUserId, new DatabaseService.DatabaseCallback<Void>() {
                         @Override
                         public void onCompleted(Void object) {
-                            removeItem(event); // נעלם מהפח מיד!
+                            removeItem(event);
                             Toast.makeText(context, "שוחזר בהצלחה", Toast.LENGTH_SHORT).show();
                         }
                         @Override
@@ -164,11 +179,32 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 .show();
     }
 
+    private void showPermanentDeleteDialog(Context context, Event event) {
+        new AlertDialog.Builder(context)
+                .setTitle("מחיקה לצמיתות")
+                .setMessage("האם אתה בטוח שברצונך למחוק התראה זו לצמיתות?")
+                .setPositiveButton("מחק", (dialog, which) -> {
+                    databaseService.deleteNotificationPermanently(event.getId(), currentUserId, new DatabaseService.DatabaseCallback<Void>() {
+                        @Override
+                        public void onCompleted(Void object) {
+                            removeItem(event);
+                            Toast.makeText(context, "נמחק לצמיתות", Toast.LENGTH_SHORT).show();
+                        }
+                        @Override
+                        public void onFailed(Exception e) {
+                            Toast.makeText(context, "שגיאה במחיקה", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("ביטול", null)
+                .show();
+    }
+
     private void respond(Event event, boolean accept, Context context) {
         databaseService.respondToInvitation(event.getId(), currentUserId, accept, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
-                removeItem(event); // נעלם מהמסך מיד אחרי החלטה!
+                removeItem(event);
                 String msg = accept ? "הפגישה אושרה!" : "הפגישה נדחתה";
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
             }
@@ -184,7 +220,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     public static class NotificationViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvType, tvLocation, tvTime, tvDate, tvParticipants, tvTimePassed;
-        ImageButton btnClose;
+        ImageButton btnClose, btnRestore; // נוסף כפתור השחזור
         MaterialButton btnAccept, btnReject;
         LinearLayout llActions;
 
@@ -198,6 +234,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             tvParticipants = itemView.findViewById(R.id.tv_event_participants_count);
             tvTimePassed = itemView.findViewById(R.id.tv_notif_time_passed);
             btnClose = itemView.findViewById(R.id.btn_notif_close);
+            btnRestore = itemView.findViewById(R.id.btn_notif_restore); // חיבור השחזור
             btnAccept = itemView.findViewById(R.id.btn_notif_accept);
             btnReject = itemView.findViewById(R.id.btn_notif_reject);
             llActions = itemView.findViewById(R.id.ll_notif_actions);

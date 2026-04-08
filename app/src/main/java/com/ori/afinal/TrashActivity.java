@@ -20,6 +20,7 @@ public class TrashActivity extends AppCompatActivity {
     private View llEmptyTrash;
     private SearchView svTrash;
     private ImageButton btnBack;
+
     private NotificationAdapter adapter;
     private DatabaseService databaseService;
     private String currentUserId;
@@ -31,17 +32,44 @@ public class TrashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_trash);
 
         databaseService = DatabaseService.getInstance();
-        currentUserId = FirebaseAuth.getInstance().getUid();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        } else {
+            finish();
+            return;
+        }
 
         rvTrash = findViewById(R.id.rv_trash);
         llEmptyTrash = findViewById(R.id.ll_empty_trash);
         svTrash = findViewById(R.id.sv_trash);
         btnBack = findViewById(R.id.btn_back_from_trash);
 
+        // התיקון לפנדה! מונע את הקריסה של הפונט
+        com.airbnb.lottie.LottieAnimationView lottiePandaTrash = findViewById(R.id.lottie_panda_trash);
+        if (lottiePandaTrash != null) {
+            lottiePandaTrash.setFontAssetDelegate(new com.airbnb.lottie.FontAssetDelegate() {
+                @Override
+                public android.graphics.Typeface fetchFont(String fontFamily) {
+                    return android.graphics.Typeface.DEFAULT_BOLD;
+                }
+            });
+        }
+
         rvTrash.setLayoutManager(new LinearLayoutManager(this));
-        // כאן אנחנו מגדירים isTrashMode = true!
+        // חשוב: isTrashMode = true
         adapter = new NotificationAdapter(currentUserId, true);
         rvTrash.setAdapter(adapter);
+
+        // מאזין כדי להציג את הפנדה באופן חי אם מרוקנים את הפח
+        adapter.setOnNotificationChangedListener(new NotificationAdapter.OnNotificationChangedListener() {
+            @Override
+            public void onNotificationCountChanged(int newCount) {
+                if (newCount == 0) {
+                    rvTrash.setVisibility(View.GONE);
+                    llEmptyTrash.setVisibility(View.VISIBLE);
+                }
+            }
+        });
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -62,20 +90,30 @@ public class TrashActivity extends AppCompatActivity {
         databaseService.getUserTrashedNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> trashedEvents) {
+                if (isFinishing() || isDestroyed()) return;
+
                 fullTrashList.clear();
-                if (trashedEvents != null) fullTrashList.addAll(trashedEvents);
+                if (trashedEvents != null) {
+                    fullTrashList.addAll(trashedEvents);
+                }
                 filterTrash(svTrash.getQuery().toString());
             }
+
             @Override
-            public void onFailed(Exception e) { llEmptyTrash.setVisibility(View.VISIBLE); }
+            public void onFailed(Exception e) {
+                llEmptyTrash.setVisibility(View.VISIBLE);
+            }
         });
     }
 
     private void filterTrash(String text) {
         List<Event> filtered = new ArrayList<>();
         for (Event e : fullTrashList) {
-            if (text.isEmpty() || e.getTitle().toLowerCase().contains(text.toLowerCase())) filtered.add(e);
+            if (text.isEmpty() || (e.getTitle() != null && e.getTitle().toLowerCase().contains(text.toLowerCase()))) {
+                filtered.add(e);
+            }
         }
+
         if (filtered.isEmpty()) {
             rvTrash.setVisibility(View.GONE);
             llEmptyTrash.setVisibility(View.VISIBLE);
@@ -83,6 +121,7 @@ public class TrashActivity extends AppCompatActivity {
             rvTrash.setVisibility(View.VISIBLE);
             llEmptyTrash.setVisibility(View.GONE);
         }
+
         adapter.setEvents(filtered);
     }
 }

@@ -43,7 +43,8 @@ public class HomePage extends AppCompatActivity {
     private RecyclerView rvEvents, rvTemplates;
     private SearchView svEvents;
 
-    private View btnProfile;
+    // הוספנו את כפתור האדמין
+    private View btnProfile, btnLogout, btnAdmin;
     private ImageButton navUpcoming, navHistory, navProgress, navNotifications, navAdd;
 
     private CircularProgressIndicator progressMeetings, progressHours;
@@ -93,22 +94,14 @@ public class HomePage extends AppCompatActivity {
         loadNotificationsCount();
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        if (intent != null && intent.getBooleanExtra("SHOW_HISTORY", false)) {
-            navHistory.performClick();
-        } else {
-            navUpcoming.performClick();
-        }
-    }
-
     private void initViews() {
         tvGreeting = findViewById(R.id.tv_greeting);
         tvDate = findViewById(R.id.tv_date);
         tvDay = findViewById(R.id.tv_day);
         tvPoints = findViewById(R.id.tv_points);
         btnProfile = findViewById(R.id.btn_profile);
+        btnLogout = findViewById(R.id.btn_logout);
+        btnAdmin = findViewById(R.id.btn_admin); // אתחול כפתור המנהל
 
         tvStatsCount = findViewById(R.id.tv_stats_count);
         tvStatsDuration = findViewById(R.id.tv_stats_duration);
@@ -165,8 +158,22 @@ public class HomePage extends AppCompatActivity {
             });
         }
 
+        if (btnLogout != null) {
+            btnLogout.setOnClickListener(v -> showLogoutDialog());
+        }
         if (btnProfile != null) {
-            btnProfile.setOnClickListener(v -> showLogoutDialog());
+            btnProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePage.this, ProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // לחיצה על כפתור האדמין מעבירה לעמוד הניהול המיוחד שבנינו
+        if (btnAdmin != null) {
+            btnAdmin.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePage.this, AdminActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
@@ -268,7 +275,7 @@ public class HomePage extends AppCompatActivity {
     private void showLogoutDialog() {
         if (isFinishing() || isDestroyed()) return;
         new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("אזור אישי")
+                .setTitle("התנתקות")
                 .setMessage("האם אתה בטוח שברצונך להתנתק מהמערכת?")
                 .setPositiveButton("כן, התנתק", (dialog, which) -> {
                     mAuth.signOut();
@@ -284,8 +291,20 @@ public class HomePage extends AppCompatActivity {
             @Override
             public void onCompleted(User user) {
                 if (isFinishing() || isDestroyed()) return;
-                if (user != null && user.getFname() != null && tvGreeting != null) {
-                    tvGreeting.setText("היי, " + user.getFname());
+                if (user != null) {
+                    if (user.getFname() != null && tvGreeting != null) {
+                        tvGreeting.setText("היי, " + user.getFname());
+                    }
+
+                    // --- כאן נמצא "הקסם" של המנהלים ---
+                    // אם המשתמש הוא מנהל (הערך admin הוא true), נציג לו את כפתור הכתר
+                    if (btnAdmin != null) {
+                        if (Boolean.TRUE.equals(user.getAdmin())) {
+                            btnAdmin.setVisibility(View.VISIBLE);
+                        } else {
+                            btnAdmin.setVisibility(View.GONE);
+                        }
+                    }
                 }
             }
             @Override
@@ -390,5 +409,6 @@ public class HomePage extends AppCompatActivity {
         super.onResume();
         loadEventsData();
         loadNotificationsCount();
+        loadUserData();
     }
 }

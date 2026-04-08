@@ -18,6 +18,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Final">
         <activity
+            android:name=".EditProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+        <activity
             android:name=".TrashActivity"
             android:exported="false" />
         <activity
@@ -59,7 +65,7 @@
             android:name=".HomePage"
             android:exported="false" />
         <activity
-            android:name=".MainAdmin"
+            android:name=".UpdateUser"
             android:exported="false" />
         <activity
             android:name=".AddEvent"
@@ -73,6 +79,7 @@
         <activity
             android:name=".NotificationsActivity"
             android:exported="false" />
+        <activity android:name=".AdminActivity" />
     </application>
 
 </manifest>

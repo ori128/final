@@ -1,255 +1,105 @@
 package com.ori.afinal.Services;
 
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.google.firebase.auth.FirebaseAuth;
-import com.ori.afinal.model.Event;
-import com.ori.afinal.model.Notification;
-import com.ori.afinal.model.User;
+
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.MutableData;
-import com.google.firebase.database.Transaction;
+import com.google.firebase.database.ValueEventListener;
+import com.ori.afinal.model.Event;
+import com.ori.afinal.model.User;
+
 import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 public class DatabaseService {
 
     private static final String TAG = "DatabaseService";
-    private static final String USERS_PATH = "users",
-            EVENTS_PATH = "events",
-            CARTS_PATH = "carts",
-            NOTIFICATIONS_PATH = "notifications";
-
-    public interface DatabaseCallback<T> {
-        void onCompleted(T object);
-        void onFailed(Exception e);
-    }
-
     private static DatabaseService instance;
     private final DatabaseReference databaseReference;
 
+    private static final String USERS_PATH = "users";
+    private static final String EVENTS_PATH = "events";
+    private static final String NOTIFICATIONS_PATH = "notifications";
+
     private DatabaseService() {
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        databaseReference = firebaseDatabase.getReference();
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        databaseReference = database.getReference();
     }
 
-    public static DatabaseService getInstance() {
+    public static synchronized DatabaseService getInstance() {
         if (instance == null) {
             instance = new DatabaseService();
         }
         return instance;
     }
 
-    private void writeData(@NotNull final String path, @NotNull final Object data, final @Nullable DatabaseCallback<Void> callback) {
-        readData(path).setValue(data, (error, ref) -> {
-            if (error != null) {
-                if (callback != null) callback.onFailed(error.toException());
-            } else {
+    public interface DatabaseCallback<T> {
+        void onCompleted(T object);
+        void onFailed(Exception e);
+    }
+
+    private void writeData(@NotNull final String path, @NotNull final Object data, @Nullable final DatabaseCallback<Void> callback) {
+        databaseReference.child(path).setValue(data).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
                 if (callback != null) callback.onCompleted(null);
-            }
-        });
-    }
-
-    private void deleteData(@NotNull final String path, @Nullable final DatabaseCallback<Void> callback) {
-        readData(path).removeValue((error, ref) -> {
-            if (error != null) {
-                if (callback != null) callback.onFailed(error.toException());
             } else {
-                if (callback != null) callback.onCompleted(null);
+                if (callback != null) callback.onFailed(task.getException());
             }
         });
     }
 
-    private DatabaseReference readData(@NotNull final String path) {
-        return databaseReference.child(path);
-    }
-
-    private <T> void getData(@NotNull final String path, @NotNull final Class<T> clazz, @NotNull final DatabaseCallback<T> callback) {
-        readData(path).get().addOnCompleteListener(task -> {
-            if (!task.isSuccessful()) {
-                callback.onFailed(task.getException());
-                return;
-            }
-            T data = task.getResult().getValue(clazz);
-            callback.onCompleted(data);
-        });
-    }
-
-    private <T> void getDataList(@NotNull final String path, @NotNull final Class<T> clazz, @NotNull final DatabaseCallback<List<T>> callback) {
-        readData(path).get().addOnCompleteListener(task -> {
-            if (!task.isSuccessful()) {
-                callback.onFailed(task.getException());
-                return;
-            }
-            List<T> tList = new ArrayList<>();
-            task.getResult().getChildren().forEach(dataSnapshot -> {
-                T t = dataSnapshot.getValue(clazz);
-                if (t != null) tList.add(t);
-            });
-            callback.onCompleted(tList);
-        });
-    }
-
-    private String generateNewId(@NotNull final String path) {
-        return databaseReference.child(path).push().getKey();
-    }
-
-    private <T> void runTransaction(@NotNull final String path, @NotNull final Class<T> clazz, @NotNull UnaryOperator<T> function, @NotNull final DatabaseCallback<T> callback) {
-        readData(path).runTransaction(new Transaction.Handler() {
-            @NonNull
-            @Override
-            public Transaction.Result doTransaction(@NonNull MutableData currentData) {
-                T currentValue = currentData.getValue(clazz);
-                currentValue = function.apply(currentValue);
-                currentData.setValue(currentValue);
-                return Transaction.success(currentData);
-            }
-
-            @Override
-            public void onComplete(@Nullable DatabaseError error, boolean committed, @Nullable DataSnapshot currentData) {
-                if (error != null) {
-                    callback.onFailed(error.toException());
-                    return;
-                }
-                T result = currentData != null ? currentData.getValue(clazz) : null;
-                callback.onCompleted(result);
-            }
-        });
-    }
-
-    // region User Section
-    public void createNewUser(@NotNull final User user, @Nullable final DatabaseCallback<String> callback) {
-        FirebaseAuth mAuth = FirebaseAuth.getInstance();
-        mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        String uid = mAuth.getUid();
-                        user.setId(uid);
-                        writeData(USERS_PATH + "/" + uid, user, new DatabaseCallback<Void>() {
-                            @Override
-                            public void onCompleted(Void v) {
-                                if (callback != null) callback.onCompleted(uid);
-                            }
-                            @Override
-                            public void onFailed(Exception e) {
-                                if (callback != null) callback.onFailed(e);
-                            }
-                        });
-                    } else if (callback != null) callback.onFailed(task.getException());
-                });
-    }
-
-    public void loginUser(@NotNull final String email, final String password, @Nullable final DatabaseCallback<String> callback) {
-        FirebaseAuth mAuth = FirebaseAuth.getInstance();
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && mAuth.getCurrentUser() != null) {
-                        if (callback != null) callback.onCompleted(mAuth.getCurrentUser().getUid());
-                    } else if (callback != null) callback.onFailed(task.getException());
-                });
+    // --- User Section ---
+    public void saveUser(@NotNull final User user, @Nullable final DatabaseCallback<Void> callback) {
+        writeData(USERS_PATH + "/" + user.getId(), user, callback);
     }
 
     public void getUser(@NotNull final String uid, @NotNull final DatabaseCallback<User> callback) {
-        getData(USERS_PATH + "/" + uid, User.class, callback);
+        databaseReference.child(USERS_PATH).child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                User user = snapshot.getValue(User.class);
+                callback.onCompleted(user);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onFailed(error.toException());
+            }
+        });
     }
 
-    public void getUserList(@NotNull final DatabaseCallback<List<User>> callback) {
-        getDataList(USERS_PATH, User.class, callback);
+    public void updateUser(@NotNull final User user, @Nullable final DatabaseCallback<Void> callback) {
+        writeData(USERS_PATH + "/" + user.getId(), user, callback);
     }
 
-    public void getEventList(@NotNull final DatabaseCallback<List<Event>> callback) {
-        getDataList(EVENTS_PATH, Event.class, callback);
-    }
-    // endregion
-
-    // region Event Section
-    public void createNewEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
+    // --- Event Section ---
+    public void saveEvent(@NotNull final Event event, @Nullable final DatabaseCallback<Void> callback) {
         if (event.getId() == null || event.getId().isEmpty()) {
-            event.setId(generateEventId());
+            String key = databaseReference.child(EVENTS_PATH).push().getKey();
+            event.setId(key);
         }
         writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
     }
 
-    public void getUserEvents(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
-        getEventList(new DatabaseCallback<List<Event>>() {
+    public void getEvent(@NotNull final String eventId, @NotNull final DatabaseCallback<Event> callback) {
+        databaseReference.child(EVENTS_PATH).child(eventId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void onCompleted(List<Event> allEvents) {
-                List<Event> userEvents = new ArrayList<>();
-                for (Event event : allEvents) {
-                    boolean isCreator = event.getEventAdmin() != null && userId.equals(event.getEventAdmin().getId());
-                    boolean isAccepted = event.getParticipantIds() != null && event.getParticipantIds().contains(userId);
-                    if (isCreator || isAccepted) userEvents.add(event);
-                }
-                callback.onCompleted(userEvents);
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Event event = snapshot.getValue(Event.class);
+                callback.onCompleted(event);
             }
-            @Override
-            public void onFailed(Exception e) { callback.onFailed(e); }
-        });
-    }
 
-    // מושך התראות שטרם נענו ושאינן בפח האשפה
-    public void getUserNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
-        getEventList(new DatabaseCallback<List<Event>>() {
             @Override
-            public void onCompleted(List<Event> allEvents) {
-                List<Event> pendingEvents = new ArrayList<>();
-                for (Event event : allEvents) {
-                    boolean isInvited = event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId);
-                    boolean isTrashed = event.getTrashedParticipantIds() != null && event.getTrashedParticipantIds().contains(userId);
-
-                    // אם הוא מוזמן ועדיין לא העביר לפח -> להציג בהתראות
-                    if (isInvited && !isTrashed) {
-                        pendingEvents.add(event);
-                    }
-                }
-                callback.onCompleted(pendingEvents);
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onFailed(error.toException());
             }
-            @Override
-            public void onFailed(Exception e) { callback.onFailed(e); }
-        });
-    }
-
-    // פונקציה חדשה: מושך התראות שטרם נענו ושהועברו לפח האשפה
-    public void getUserTrashedNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
-        getEventList(new DatabaseCallback<List<Event>>() {
-            @Override
-            public void onCompleted(List<Event> allEvents) {
-                List<Event> trashedEvents = new ArrayList<>();
-                for (Event event : allEvents) {
-                    boolean isInvited = event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId);
-                    boolean isTrashed = event.getTrashedParticipantIds() != null && event.getTrashedParticipantIds().contains(userId);
-
-                    if (isInvited && isTrashed) {
-                        trashedEvents.add(event);
-                    }
-                }
-                callback.onCompleted(trashedEvents);
-            }
-            @Override
-            public void onFailed(Exception e) { callback.onFailed(e); }
-        });
-    }
-
-    public void getSmartNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Notification>> callback) {
-        getDataList(NOTIFICATIONS_PATH, Notification.class, new DatabaseCallback<List<Notification>>() {
-            @Override
-            public void onCompleted(List<Notification> allNotifications) {
-                List<Notification> userNotifications = new ArrayList<>();
-                for (Notification notification : allNotifications) {
-                    if (notification.getUserId() != null && notification.getUserId().equals(userId)) {
-                        userNotifications.add(notification);
-                    }
-                }
-                callback.onCompleted(userNotifications);
-            }
-            @Override
-            public void onFailed(Exception e) { callback.onFailed(e); }
         });
     }
 
@@ -257,24 +107,73 @@ public class DatabaseService {
         writeData(EVENTS_PATH + "/" + event.getId(), event, callback);
     }
 
-    public void getEvent(@NotNull final String eventId, @NotNull final DatabaseCallback<Event> callback) {
-        getData(EVENTS_PATH + "/" + eventId, Event.class, callback);
+    public void getUserEvents(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
+        databaseReference.child(EVENTS_PATH).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Event> events = new ArrayList<>();
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Event event = dataSnapshot.getValue(Event.class);
+                    if (event != null && event.getParticipantIds() != null && event.getParticipantIds().contains(userId)) {
+                        events.add(event);
+                    }
+                }
+                callback.onCompleted(events);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onFailed(error.toException());
+            }
+        });
     }
 
-    public String generateEventId() { return generateNewId(EVENTS_PATH); }
+    // --- Notifications & Trash Section ---
+    public void getUserNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
+        databaseReference.child(EVENTS_PATH).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Event> events = new ArrayList<>();
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Event event = dataSnapshot.getValue(Event.class);
+                    if (event != null && event.getInvitedParticipantIds() != null && event.getInvitedParticipantIds().contains(userId)) {
+                        if (event.getTrashedParticipantIds() == null || !event.getTrashedParticipantIds().contains(userId)) {
+                            events.add(event);
+                        }
+                    }
+                }
+                callback.onCompleted(events);
+            }
 
-    public String generateNotificationId() { return generateNewId(NOTIFICATIONS_PATH); }
-
-    public void sendNotification(@NotNull final Notification notification, @Nullable final DatabaseCallback<Void> callback) {
-        writeData(NOTIFICATIONS_PATH + "/" + notification.getId(), notification, callback);
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onFailed(error.toException());
+            }
+        });
     }
 
-    public void deleteNotification(@NotNull final String notificationId, @Nullable final DatabaseCallback<Void> callback) {
-        deleteData(NOTIFICATIONS_PATH + "/" + notificationId, callback);
+    public void getUserTrashedNotifications(@NotNull final String userId, @NotNull final DatabaseCallback<List<Event>> callback) {
+        databaseReference.child(EVENTS_PATH).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Event> events = new ArrayList<>();
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Event event = dataSnapshot.getValue(Event.class);
+                    if (event != null && event.getTrashedParticipantIds() != null && event.getTrashedParticipantIds().contains(userId)) {
+                        events.add(event);
+                    }
+                }
+                callback.onCompleted(events);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onFailed(error.toException());
+            }
+        });
     }
 
-    // עודכנה לטפל ב-declinedParticipantIds ולהסיר מהפח אם צריך
-    public void respondToInvitation(@NotNull final String eventId, @NotNull final String userId, final boolean isAccepted, @Nullable final DatabaseCallback<Void> callback) {
+    public void respondToInvitation(@NotNull final String eventId, @NotNull final String userId, boolean isAccepted, @Nullable final DatabaseCallback<Void> callback) {
         getEvent(eventId, new DatabaseCallback<Event>() {
             @Override
             public void onCompleted(Event event) {
@@ -282,22 +181,14 @@ public class DatabaseService {
                     if (event.getInvitedParticipantIds() != null) {
                         event.getInvitedParticipantIds().remove(userId);
                     }
-                    if (event.getTrashedParticipantIds() != null) {
-                        event.getTrashedParticipantIds().remove(userId);
-                    }
-
                     if (isAccepted) {
-                        if (event.getParticipantIds() == null) event.setParticipantIds(new ArrayList<>());
+                        if (event.getParticipantIds() == null) {
+                            event.setParticipantIds(new ArrayList<>());
+                        }
                         if (!event.getParticipantIds().contains(userId)) {
                             event.getParticipantIds().add(userId);
                         }
-                    } else {
-                        if (event.getDeclinedParticipantIds() == null) event.setDeclinedParticipantIds(new ArrayList<>());
-                        if (!event.getDeclinedParticipantIds().contains(userId)) {
-                            event.getDeclinedParticipantIds().add(userId);
-                        }
                     }
-
                     updateEvent(event, callback);
                 } else if (callback != null) {
                     callback.onFailed(new Exception("Event not found"));
@@ -311,13 +202,14 @@ public class DatabaseService {
         });
     }
 
-    // פונקציה חדשה: העברה לפח האשפה
     public void moveNotificationToTrash(@NotNull final String eventId, @NotNull final String userId, @Nullable final DatabaseCallback<Void> callback) {
         getEvent(eventId, new DatabaseCallback<Event>() {
             @Override
             public void onCompleted(Event event) {
                 if (event != null) {
-                    if (event.getTrashedParticipantIds() == null) event.setTrashedParticipantIds(new ArrayList<>());
+                    if (event.getTrashedParticipantIds() == null) {
+                        event.setTrashedParticipantIds(new ArrayList<>());
+                    }
                     if (!event.getTrashedParticipantIds().contains(userId)) {
                         event.getTrashedParticipantIds().add(userId);
                     }
@@ -326,6 +218,7 @@ public class DatabaseService {
                     callback.onFailed(new Exception("Event not found"));
                 }
             }
+
             @Override
             public void onFailed(Exception e) {
                 if (callback != null) callback.onFailed(e);
@@ -333,7 +226,6 @@ public class DatabaseService {
         });
     }
 
-    // פונקציה חדשה: שחזור מפח האשפה
     public void restoreNotificationFromTrash(@NotNull final String eventId, @NotNull final String userId, @Nullable final DatabaseCallback<Void> callback) {
         getEvent(eventId, new DatabaseCallback<Event>() {
             @Override
@@ -347,11 +239,92 @@ public class DatabaseService {
                     callback.onFailed(new Exception("Event not found"));
                 }
             }
+
             @Override
             public void onFailed(Exception e) {
                 if (callback != null) callback.onFailed(e);
             }
         });
     }
-    // endregion
+
+    public void deleteNotificationPermanently(@NotNull final String eventId, @NotNull final String userId, @Nullable final DatabaseCallback<Void> callback) {
+        getEvent(eventId, new DatabaseCallback<Event>() {
+            @Override
+            public void onCompleted(Event event) {
+                if (event != null) {
+                    if (event.getInvitedParticipantIds() != null) {
+                        event.getInvitedParticipantIds().remove(userId);
+                    }
+                    if (event.getTrashedParticipantIds() != null) {
+                        event.getTrashedParticipantIds().remove(userId);
+                    }
+                    updateEvent(event, callback);
+                } else if (callback != null) {
+                    callback.onFailed(new Exception("Event not found"));
+                }
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                if (callback != null) callback.onFailed(e);
+            }
+        });
+    }
+
+    // --- Admin Actions ---
+    public void getAllUsers(final DatabaseCallback<List<User>> callback) {
+        databaseReference.child(USERS_PATH).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<User> users = new ArrayList<>();
+                for (DataSnapshot userSnap : snapshot.getChildren()) {
+                    User u = userSnap.getValue(User.class);
+                    if (u != null) users.add(u);
+                }
+                if (callback != null) callback.onCompleted(users);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                if (callback != null) callback.onFailed(error.toException());
+            }
+        });
+    }
+
+    public void getAllEventsGlobally(final DatabaseCallback<List<Event>> callback) {
+        databaseReference.child(EVENTS_PATH).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Event> events = new ArrayList<>();
+                for (DataSnapshot eventSnap : snapshot.getChildren()) {
+                    Event e = eventSnap.getValue(Event.class);
+                    if (e != null) events.add(e);
+                }
+                if (callback != null) callback.onCompleted(events);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                if (callback != null) callback.onFailed(error.toException());
+            }
+        });
+    }
+
+    public void deleteUserFromDB(String userId, final DatabaseCallback<Void> callback) {
+        databaseReference.child(USERS_PATH).child(userId).removeValue().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                if (callback != null) callback.onCompleted(null);
+            } else {
+                if (callback != null) callback.onFailed(task.getException());
+            }
+        });
+    }
+
+    public void deleteEventGlobally(String eventId, final DatabaseCallback<Void> callback) {
+        databaseReference.child(EVENTS_PATH).child(eventId).removeValue().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                if (callback != null) callback.onCompleted(null);
+            } else {
+                if (callback != null) callback.onFailed(task.getException());
+            }
+        });
+    }
 }
