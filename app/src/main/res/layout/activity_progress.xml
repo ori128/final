@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="#F3F4F6"
     android:layoutDirection="rtl">
 
     <TextView
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="48dp"
         android:text="לוח בקרה"
-        android:textColor="#FFFFFF"
+        android:textColor="#1F2937"
         android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -26,8 +26,9 @@
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
-        app:cardBackgroundColor="#1C1C1E"
+        app:cardBackgroundColor="#FFFFFF"
         app:cardCornerRadius="24dp"
+        app:cardElevation="2dp"
         app:strokeWidth="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -53,7 +54,7 @@
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:text="היסטוריה"
-                    android:textColor="#8E8E93"
+                    android:textColor="#6B7280"
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </com.google.android.material.card.MaterialCardView>
@@ -62,7 +63,7 @@
                 android:id="@+id/btn_tab_stats"
                 android:layout_width="130dp"
                 android:layout_height="match_parent"
-                app:cardBackgroundColor="#333333"
+                app:cardBackgroundColor="#3B82F6"
                 app:cardCornerRadius="20dp"
                 app:strokeWidth="0dp">
 
@@ -106,20 +107,21 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-                    app:indicatorColor="#FFFFFF"
+                    app:indicatorColor="#3B82F6"
                     app:indicatorSize="240dp"
-                    app:trackColor="#1C1C1E"
+                    app:trackColor="#E5E7EB"
                     app:trackThickness="16dp"
                     app:indicatorDirectionCircular="clockwise"/>
 
                 <TextView
+                    android:id="@+id/tv_progress_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_above="@id/tv_progress_percent"
                     android:layout_centerHorizontal="true"
                     android:layout_marginBottom="8dp"
-                    android:text="התקדמות"
-                    android:textColor="#8E8E93"
+                    android:text="ימי פעילות"
+                    android:textColor="#6B7280"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -128,8 +130,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-                    android:text="0%"
-                    android:textColor="#FFFFFF"
+                    android:text="0"
+                    android:textColor="#1F2937"
                     android:textSize="56sp"
                     android:textStyle="bold" />
             </RelativeLayout>
@@ -139,7 +141,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:text="הסטטיסטיקה שלי"
-                android:textColor="#FFFFFF"
+                android:textColor="#1F2937"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -148,7 +150,7 @@
                 android:layout_height="1dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="16dp"
-                android:background="#333333" />
+                android:background="#E5E7EB" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -161,7 +163,45 @@
                     android:layout_height="120dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    app:cardBackgroundColor="#1C1C1E"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardElevation="4dp"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="תאריך\nהצטרפות"
+                            android:textColor="#6B7280"
+                            android:textSize="14sp"
+                            android:textStyle="bold"/>
+
+                        <TextView
+                            android:id="@+id/tv_stat_registration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="--/--/----"
+                            android:textColor="#3B82F6"
+                            android:textSize="20sp"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="120dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardElevation="4dp"
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="0dp">
 
@@ -176,7 +216,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="פגישות\nשהושלמו"
-                            android:textColor="#8E8E93"
+                            android:textColor="#6B7280"
                             android:textSize="14sp"
                             android:textStyle="bold"/>
 
@@ -185,44 +225,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="-"
-                            android:textColor="#FFFFFF"
-                            android:textSize="26sp"
-                            android:textStyle="bold"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="120dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    app:cardBackgroundColor="#1C1C1E"
-                    app:cardCornerRadius="16dp"
-                    app:strokeWidth="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="סך הכל\nפגישות"
-                            android:textColor="#8E8E93"
-                            android:textSize="14sp"
-                            android:textStyle="bold"/>
-
-                        <TextView
-                            android:id="@+id/tv_stat_total"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="-"
-                            android:textColor="#FFFFFF"
+                            android:text="0"
+                            android:textColor="#3B82F6"
                             android:textSize="26sp"
                             android:textStyle="bold"/>
                     </LinearLayout>
@@ -241,7 +245,8 @@
                     android:layout_height="120dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    app:cardBackgroundColor="#1C1C1E"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardElevation="4dp"
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="0dp">
 
@@ -256,7 +261,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="שעות\nבפגישות"
-                            android:textColor="#8E8E93"
+                            android:textColor="#6B7280"
                             android:textSize="14sp"
                             android:textStyle="bold"/>
 
@@ -266,7 +271,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:text="-"
-                            android:textColor="#FFFFFF"
+                            android:textColor="#3B82F6"
                             android:textSize="26sp"
                             android:textStyle="bold"/>
                     </LinearLayout>
@@ -277,7 +282,8 @@
                     android:layout_height="120dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    app:cardBackgroundColor="#1C1C1E"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardElevation="4dp"
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="0dp">
 
@@ -292,7 +298,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="פגישה\nאחרונה"
-                            android:textColor="#8E8E93"
+                            android:textColor="#6B7280"
                             android:textSize="14sp"
                             android:textStyle="bold"/>
 
@@ -302,7 +308,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:text="-"
-                            android:textColor="#FFFFFF"
+                            android:textColor="#3B82F6"
                             android:textSize="22sp"
                             android:textStyle="bold"/>
                     </LinearLayout>
@@ -337,7 +343,8 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="#1C1C1E"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardElevation="4dp"
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="0dp">
 
@@ -345,14 +352,14 @@
                         android:id="@+id/calendarView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:headerColor="#1C1C1E"
-                        app:pagesColor="#1C1C1E"
-                        app:abbreviationsBarColor="#1C1C1E"
-                        app:daysLabelsColor="#FFFFFF"
-                        app:abbreviationsLabelsColor="#8E8E93"
+                        app:headerColor="#FFFFFF"
+                        app:pagesColor="#FFFFFF"
+                        app:abbreviationsBarColor="#FFFFFF"
+                        app:daysLabelsColor="#1F2937"
+                        app:abbreviationsLabelsColor="#6B7280"
                         app:todayLabelColor="#3B82F6"
                         app:selectionColor="#3B82F6"
-                        app:headerLabelColor="#FFFFFF"
+                        app:headerLabelColor="#1F2937"
                         app:eventsEnabled="true"
                         app:type="classic" />
                 </com.google.android.material.card.MaterialCardView>
@@ -369,7 +376,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="היסטוריית הפגישות שלי"
-                        android:textColor="#FFFFFF"
+                        android:textColor="#1F2937"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -391,7 +398,7 @@
                     android:layout_height="1dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="16dp"
-                    android:background="#333333" />
+                    android:background="#E5E7EB" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_recent_history"
@@ -422,7 +429,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="אין פגישות שהושלמו"
-                        android:textColor="#8E8E93"
+                        android:textColor="#6B7280"
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -434,7 +441,7 @@
         android:layout_width="wrap_content"
         android:layout_height="64dp"
         android:layout_marginBottom="24dp"
-        app:cardBackgroundColor="#1C1C1E"
+        app:cardBackgroundColor="#FFFFFF"
         app:cardCornerRadius="32dp"
         app:cardElevation="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -460,7 +467,7 @@
                 </com.google.android.material.card.MaterialCardView>
             </RelativeLayout>
             <View android:layout_width="8dp" android:layout_height="match_parent" />
-            <ImageButton android:id="@+id/nav_progress" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_menu_sort_by_size" app:tint="#FFFFFF" />
+            <ImageButton android:id="@+id/nav_progress" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_menu_sort_by_size" app:tint="#3B82F6" />
             <View android:layout_width="8dp" android:layout_height="match_parent" />
             <ImageButton android:id="@+id/nav_add" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_input_add" app:tint="#6B7280" />
         </LinearLayout>

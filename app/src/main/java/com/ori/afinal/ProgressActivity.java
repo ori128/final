@@ -1,5 +1,6 @@
 package com.ori.afinal;
 
+import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
@@ -22,6 +23,7 @@ import com.applandeo.materialcalendarview.EventDay;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.adapter.EventAdapter;
 import com.ori.afinal.model.Event;
@@ -33,6 +35,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class ProgressActivity extends AppCompatActivity {
 
@@ -41,8 +44,10 @@ public class ProgressActivity extends AppCompatActivity {
     private MaterialCardView btnTabStats, btnTabHistory;
     private TextView tvTabStats, tvTabHistory;
     private View scrollStats, llHistoryContainer;
+
     private CircularProgressIndicator progressMain;
-    private TextView tvProgressPercent, tvStatCompleted, tvStatTotal, tvStatLastDate, tvStatHours;
+    private TextView tvProgressPercent;
+    private TextView tvStatCompleted, tvStatRegistration, tvStatLastDate, tvStatHours;
 
     private CalendarView calendarView;
     private RecyclerView rvRecentHistory;
@@ -55,6 +60,7 @@ public class ProgressActivity extends AppCompatActivity {
     private TextView tvNotificationBadgeCount;
 
     private DatabaseService databaseService;
+    private FirebaseAuth mAuth;
     private String currentUserId;
 
     @Override
@@ -69,7 +75,7 @@ public class ProgressActivity extends AppCompatActivity {
             return insets;
         });
 
-        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
             currentUserId = mAuth.getCurrentUser().getUid();
             databaseService = DatabaseService.getInstance();
@@ -83,6 +89,8 @@ public class ProgressActivity extends AppCompatActivity {
         setupBottomNavigation();
         loadStatisticsAndHistory();
         loadNotificationsCount();
+
+        loadUserAccountStats();
     }
 
     private void initViews() {
@@ -92,10 +100,12 @@ public class ProgressActivity extends AppCompatActivity {
         tvTabHistory = findViewById(R.id.tv_tab_history);
         scrollStats = findViewById(R.id.scroll_stats);
         llHistoryContainer = findViewById(R.id.ll_history_container);
+
         progressMain = findViewById(R.id.progress_main);
         tvProgressPercent = findViewById(R.id.tv_progress_percent);
+
         tvStatCompleted = findViewById(R.id.tv_stat_completed);
-        tvStatTotal = findViewById(R.id.tv_stat_total);
+        tvStatRegistration = findViewById(R.id.tv_stat_registration);
         tvStatLastDate = findViewById(R.id.tv_stat_last_date);
         tvStatHours = findViewById(R.id.tv_stat_hours);
 
@@ -124,7 +134,6 @@ public class ProgressActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // פה נמצא התיקון! nav_upcoming במקום nav_home
         navHome = findViewById(R.id.nav_upcoming);
         navHistory = findViewById(R.id.nav_history);
         navProgress = findViewById(R.id.nav_progress);
@@ -136,19 +145,20 @@ public class ProgressActivity extends AppCompatActivity {
 
     private void setupTopToggle() {
         btnTabStats.setOnClickListener(v -> {
-            btnTabStats.setCardBackgroundColor(Color.parseColor("#333333"));
+            btnTabStats.setCardBackgroundColor(Color.parseColor("#3B82F6"));
             tvTabStats.setTextColor(Color.parseColor("#FFFFFF"));
             btnTabHistory.setCardBackgroundColor(Color.parseColor("#00000000"));
-            tvTabHistory.setTextColor(Color.parseColor("#8E8E93"));
+            tvTabHistory.setTextColor(Color.parseColor("#6B7280"));
             scrollStats.setVisibility(View.VISIBLE);
             llHistoryContainer.setVisibility(View.GONE);
+            loadUserAccountStats();
         });
 
         btnTabHistory.setOnClickListener(v -> {
-            btnTabHistory.setCardBackgroundColor(Color.parseColor("#333333"));
+            btnTabHistory.setCardBackgroundColor(Color.parseColor("#3B82F6"));
             tvTabHistory.setTextColor(Color.parseColor("#FFFFFF"));
             btnTabStats.setCardBackgroundColor(Color.parseColor("#00000000"));
-            tvTabStats.setTextColor(Color.parseColor("#8E8E93"));
+            tvTabStats.setTextColor(Color.parseColor("#6B7280"));
             llHistoryContainer.setVisibility(View.VISIBLE);
             scrollStats.setVisibility(View.GONE);
         });
@@ -179,6 +189,43 @@ public class ProgressActivity extends AppCompatActivity {
         });
     }
 
+    private void loadUserAccountStats() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && user.getMetadata() != null) {
+            long creationTimestamp = user.getMetadata().getCreationTimestamp();
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            String registrationDateStr = sdf.format(new Date(creationTimestamp));
+            if (tvStatRegistration != null) tvStatRegistration.setText(registrationDateStr);
+
+            long currentTimestamp = System.currentTimeMillis();
+            long diffInMillis = currentTimestamp - creationTimestamp;
+            long daysActive = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+            if (daysActive <= 0) daysActive = 1;
+
+            animateDaysCounter(0, (int) daysActive);
+        }
+    }
+
+    private void animateDaysCounter(int start, int end) {
+        if (tvProgressPercent == null || progressMain == null) return;
+        ValueAnimator animator = ValueAnimator.ofInt(start, end);
+        animator.setDuration(1500);
+        animator.addUpdateListener(animation -> {
+            int val = (int) animation.getAnimatedValue();
+            tvProgressPercent.setText(String.valueOf(val));
+
+            int percent = Math.min((int) (((double) val / 100.0) * 100), 100);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                progressMain.setProgress(percent, true);
+            } else {
+                progressMain.setProgress(percent);
+            }
+        });
+        animator.start();
+    }
+
     private void loadStatisticsAndHistory() {
         databaseService.getUserEvents(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
@@ -186,17 +233,14 @@ public class ProgressActivity extends AppCompatActivity {
                 if (isFinishing() || isDestroyed()) return;
 
                 if (events == null || events.isEmpty()) {
-                    tvStatTotal.setText("0");
                     tvStatCompleted.setText("0");
                     tvStatLastDate.setText("אין");
                     tvStatHours.setText("0h");
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) progressMain.setProgress(0, true);
                     rvRecentHistory.setVisibility(View.GONE);
                     llEmptyHistory.setVisibility(View.VISIBLE);
                     return;
                 }
 
-                int totalMeetings = events.size();
                 int completedMeetings = 0;
                 double totalHours = 0;
                 long maxPastMillis = 0;
@@ -213,6 +257,13 @@ public class ProgressActivity extends AppCompatActivity {
                         if (event.getDateTime() != null) {
                             Date startDate = sdfFull.parse(event.getDateTime());
                             if (startDate != null) {
+
+                                // הוספת נקודה כחולה ללוח השנה עבור *כל* פגישה
+                                Calendar calendar = Calendar.getInstance();
+                                calendar.setTime(startDate);
+                                calendarEvents.add(new EventDay(calendar, R.drawable.calendar_dot));
+
+                                // חישוב סטטיסטיקות והיסטוריה רק לפגישות עבר
                                 long startMillis = startDate.getTime();
                                 long endMillis = startMillis + (long) (event.getParticipationHours() * 60 * 60 * 1000);
                                 if (currentTime > endMillis) {
@@ -220,28 +271,17 @@ public class ProgressActivity extends AppCompatActivity {
                                     totalHours += event.getParticipationHours();
                                     if (endMillis > maxPastMillis) maxPastMillis = endMillis;
                                     pastEvents.add(event);
-
-                                    Calendar calendar = Calendar.getInstance();
-                                    calendar.setTime(startDate);
-                                    calendarEvents.add(new EventDay(calendar, R.drawable.calendar_dot));
                                 }
                             }
                         }
                     } catch (Exception e) { e.printStackTrace(); }
                 }
 
-                tvStatTotal.setText(String.valueOf(totalMeetings));
                 tvStatCompleted.setText(String.valueOf(completedMeetings));
                 String hoursText = (totalHours == (long) totalHours) ? String.format(Locale.getDefault(), "%d", (long) totalHours) : String.format(Locale.getDefault(), "%.1f", totalHours);
                 tvStatHours.setText(hoursText + "h");
                 if (maxPastMillis > 0) tvStatLastDate.setText(sdfDisplay.format(new Date(maxPastMillis)));
                 else tvStatLastDate.setText("אין");
-
-                int goal = 10;
-                int percent = (int) Math.min(((double) completedMeetings / goal) * 100, 100);
-                tvProgressPercent.setText(percent + "%");
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) progressMain.setProgress(percent, true);
-                else progressMain.setProgress(percent);
 
                 calendarView.setEvents(calendarEvents);
 
@@ -292,5 +332,6 @@ public class ProgressActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadStatisticsAndHistory();
+        loadUserAccountStats();
     }
 }
