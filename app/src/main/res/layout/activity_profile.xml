@@ -113,18 +113,6 @@
             app:strokeWidth="1dp"
             android:textColor="#1F2937" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_toggle_theme"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="מצב לילה / רגיל"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:backgroundTint="#1F2937"
-            app:cornerRadius="12dp"
-            app:icon="@android:drawable/ic_menu_month"
-            app:iconTint="#FFFFFF"
-            android:textColor="#FFFFFF" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

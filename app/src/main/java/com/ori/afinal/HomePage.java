@@ -1,6 +1,7 @@
 package com.ori.afinal;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -16,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.ori.afinal.Services.DatabaseService;
 import com.ori.afinal.adapter.EventAdapter;
@@ -34,15 +36,18 @@ public class HomePage extends AppCompatActivity {
 
     private static final String TAG = "HomePage";
 
-    private TextView tvGreeting, tvDate, tvDay, tvPoints;
-    private TextView tvNotificationBadgeCount, tvListHeader, tvEmptyText;
+    private TextView tvGreeting, tvDate, tvDay;
+    private TextView tvStatsCount, tvStatsDuration, tvNotificationBadgeCount;
+    private TextView tvListHeader, tvEmptyText;
     private View cvNotificationBadge;
     private RecyclerView rvEvents, rvTemplates;
     private SearchView svEvents;
 
+    // הוספנו את כפתור האדמין
     private View btnProfile, btnLogout, btnAdmin;
     private ImageButton navUpcoming, navHistory, navProgress, navNotifications, navAdd;
 
+    private CircularProgressIndicator progressMeetings, progressHours;
     private View cvLiveMeeting;
     private TextView tvLiveTitle, tvLiveTime;
     private View llEmptyState;
@@ -54,6 +59,9 @@ public class HomePage extends AppCompatActivity {
 
     private List<Event> fullEventsList = new ArrayList<>();
     private boolean isShowingHistory = false;
+
+    private final int GOAL_MEETINGS = 5;
+    private final double GOAL_HOURS = 10.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,11 +98,12 @@ public class HomePage extends AppCompatActivity {
         tvGreeting = findViewById(R.id.tv_greeting);
         tvDate = findViewById(R.id.tv_date);
         tvDay = findViewById(R.id.tv_day);
-        tvPoints = findViewById(R.id.tv_points);
         btnProfile = findViewById(R.id.btn_profile);
         btnLogout = findViewById(R.id.btn_logout);
-        btnAdmin = findViewById(R.id.btn_admin);
+        btnAdmin = findViewById(R.id.btn_admin); // אתחול כפתור המנהל
 
+        tvStatsCount = findViewById(R.id.tv_stats_count);
+        tvStatsDuration = findViewById(R.id.tv_stats_duration);
         rvEvents = findViewById(R.id.rv_events);
         rvTemplates = findViewById(R.id.rv_templates);
         cvNotificationBadge = findViewById(R.id.cv_notification_badge);
@@ -109,6 +118,8 @@ public class HomePage extends AppCompatActivity {
         navNotifications = findViewById(R.id.nav_notifications);
         navAdd = findViewById(R.id.nav_add);
 
+        progressMeetings = findViewById(R.id.progress_meetings);
+        progressHours = findViewById(R.id.progress_hours);
         cvLiveMeeting = findViewById(R.id.cv_live_meeting);
         tvLiveTitle = findViewById(R.id.tv_live_title);
         tvLiveTime = findViewById(R.id.tv_live_time);
@@ -156,6 +167,7 @@ public class HomePage extends AppCompatActivity {
             });
         }
 
+        // לחיצה על כפתור האדמין מעבירה לעמוד הניהול המיוחד שבנינו
         if (btnAdmin != null) {
             btnAdmin.setOnClickListener(v -> {
                 Intent intent = new Intent(HomePage.this, AdminActivity.class);
@@ -282,6 +294,9 @@ public class HomePage extends AppCompatActivity {
                     if (user.getFname() != null && tvGreeting != null) {
                         tvGreeting.setText("היי, " + user.getFname());
                     }
+
+                    // --- כאן נמצא "הקסם" של המנהלים ---
+                    // אם המשתמש הוא מנהל (הערך admin הוא true), נציג לו את כפתור הכתר
                     if (btnAdmin != null) {
                         if (Boolean.TRUE.equals(user.getAdmin())) {
                             btnAdmin.setVisibility(View.VISIBLE);
@@ -302,6 +317,7 @@ public class HomePage extends AppCompatActivity {
             public void onCompleted(List<Event> events) {
                 if (isFinishing() || isDestroyed()) return;
                 fullEventsList.clear();
+                double totalDuration = 0;
                 int completedMeetingsCount = 0;
 
                 if (events != null) {
@@ -323,6 +339,7 @@ public class HomePage extends AppCompatActivity {
                                         liveEvent = event;
                                         liveEventEndTimeMillis = endMillis;
                                     }
+                                    if (currentTime >= startMillis) totalDuration += event.getParticipationHours();
                                     if (currentTime > endMillis) completedMeetingsCount++;
                                 }
                             }
@@ -336,11 +353,31 @@ public class HomePage extends AppCompatActivity {
                     } else {
                         cvLiveMeeting.setVisibility(View.GONE);
                     }
-                    if (tvPoints != null) tvPoints.setText(String.valueOf(completedMeetingsCount * 10));
+                    // שורת עדכון הנקודות הוסרה מכאן
                 }
 
                 String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
                 filterEvents(currentQuery);
+
+                if (tvStatsCount != null) tvStatsCount.setText(String.valueOf(fullEventsList.size()));
+                if (tvStatsDuration != null) {
+                    String durationText = (totalDuration == (long) totalDuration) ?
+                            String.format(Locale.getDefault(), "%dh", (long) totalDuration) :
+                            String.format(Locale.getDefault(), "%.1fh", totalDuration);
+                    tvStatsDuration.setText(durationText);
+                }
+
+                int currentMeetingsCount = fullEventsList.size();
+                int meetingsProgressPercentage = (int) Math.min(((double) currentMeetingsCount / GOAL_MEETINGS) * 100, 100);
+                int hoursProgressPercentage = (int) Math.min((totalDuration / GOAL_HOURS) * 100, 100);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    if (progressMeetings != null) progressMeetings.setProgress(meetingsProgressPercentage, true);
+                    if (progressHours != null) progressHours.setProgress(hoursProgressPercentage, true);
+                } else {
+                    if (progressMeetings != null) progressMeetings.setProgress(meetingsProgressPercentage);
+                    if (progressHours != null) progressHours.setProgress(hoursProgressPercentage);
+                }
             }
             @Override
             public void onFailed(Exception e) { Log.e(TAG, "Failed to load events", e); }

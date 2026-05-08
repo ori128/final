@@ -1,9 +1,6 @@
 package com.ori.afinal;
 
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -11,7 +8,6 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,7 +21,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private ImageButton btnBack;
     private TextView tvAvatarLetter, tvProfileName, tvProfileEmail;
-    private MaterialButton btnEditProfile, btnToggleTheme;
+    private MaterialButton btnEditProfile;
 
     private DatabaseService databaseService;
     private String currentUserId;
@@ -51,7 +47,6 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         initViews();
-        updateThemeButtonUI(); // קריאה לעדכון הכפתור לפי המצב הנוכחי
     }
 
     @Override
@@ -66,7 +61,6 @@ public class ProfileActivity extends AppCompatActivity {
         tvProfileName = findViewById(R.id.tv_profile_name);
         tvProfileEmail = findViewById(R.id.tv_profile_email);
         btnEditProfile = findViewById(R.id.btn_edit_profile);
-        btnToggleTheme = findViewById(R.id.btn_toggle_theme);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -74,8 +68,6 @@ public class ProfileActivity extends AppCompatActivity {
             Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
             startActivity(intent);
         });
-
-        btnToggleTheme.setOnClickListener(v -> toggleNightMode());
     }
 
     private void loadUserProfile() {
@@ -84,7 +76,7 @@ public class ProfileActivity extends AppCompatActivity {
             public void onCompleted(User user) {
                 if (user != null) {
                     String fname = user.getFname() != null ? user.getFname() : "";
-                    String lname = user.getLname() != null ? user.getLname() : ""; // במידה ויש שם משפחה
+                    String lname = user.getLname() != null ? user.getLname() : "";
                     String fullName = fname + " " + lname;
                     String email = user.getEmail() != null ? user.getEmail() : "";
 
@@ -102,27 +94,5 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(ProfileActivity.this, "שגיאה בטעינת נתונים", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void updateThemeButtonUI() {
-        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
-            // אנחנו במצב לילה -> הכפתור יהיה ירוק ויציע לעבור ליום
-            btnToggleTheme.setText("עבור למצב רגיל (יום)");
-            btnToggleTheme.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#10B981"))); // ירוק
-        } else {
-            // אנחנו במצב יום -> הכפתור יהיה כהה ויציע לעבור ללילה
-            btnToggleTheme.setText("עבור למצב לילה");
-            btnToggleTheme.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1F2937"))); // כהה
-        }
-    }
-
-    private void toggleNightMode() {
-        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        }
     }
 }
