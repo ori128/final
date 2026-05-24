@@ -43,20 +43,23 @@ public class AddEvent extends AppCompatActivity {
 
     private static final String TAG = "AddEvent";
 
+    // כאן אני מגדיר את כל השדות והכפתורים שיש לי בטופס יצירת הפגישה
     private EditText etTitle, etLocation, etDescription;
     private TextInputEditText etDatePicker, etStartTime, etEndTime;
     private RadioGroup radioGroupType;
     private Button btnSaveEvent, btnBack, btnAddParticipants;
     private TextView tvParticipantsList;
 
-    // כפתורי הניווט התחתון המרחף
+    // כפתורי הניווט התחתון (Bottom Navigation) והתראות
     private ImageButton navUpcoming, navHistory, navProgress, navNotifications, navAdd;
     private View cvNotificationBadge;
     private TextView tvNotificationBadgeCount;
 
+    // אובייקטים להתחברות מול מסד הנתונים שלי ומערכת האימות של Firebase
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
 
+    // משתנים לשמירת התאריך שנבחר ורשימת המזהים (IDs) של האנשים שהזמנתי לפגישה
     private Calendar selectedDate;
     private List<String> selectedParticipantIds = new ArrayList<>();
 
@@ -65,15 +68,18 @@ public class AddEvent extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_event);
 
+        // פה אני מוודא שיש לי הרשאה לשלוח התראות למשתמש (רלוונטי לאנדרואיד 13 ומעלה)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
 
+        // אתחול החיבור לשרת (Firebase)
         databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        // קישור בין כל המשתנים שהגדרתי למעלה לבין קובץ העיצוב (XML) של המסך
         etTitle = findViewById(R.id.et_title);
         etLocation = findViewById(R.id.et_location);
         etDescription = findViewById(R.id.et_description);
@@ -101,16 +107,21 @@ public class AddEvent extends AppCompatActivity {
 
         selectedDate = Calendar.getInstance();
 
+        // קורא לפונקציות העזר שיצרתי שמגדירות את תפקוד המסך
         setupPickers();
         setupRadioGroupListener();
         setupBottomNavigation();
-
         handleTemplateData();
 
+        // לחיצה על "שמור פגישה" תפעיל את הפונקציה המרכזית שיוצרת את הפגישה
         btnSaveEvent.setOnClickListener(v -> createEvent());
+
+        // לחיצה על חזור פשוט סוגרת את המסך הנוכחי ומחזירה אחורה
         btnBack.setOnClickListener(v -> finish());
 
+        // הלוגיקה של כפתור "הוסף משתתפים" - פותח חלונית (Dialog) לבחירת האנשים לפגישה
         btnAddParticipants.setOnClickListener(v -> {
+            // אני קורא לכל המשתמשים מהדאטה-בייס כדי להציג אותם ברשימה
             databaseService.getAllUsers(new DatabaseService.DatabaseCallback<List<User>>() {
                 @Override
                 public void onCompleted(List<User> users) {
@@ -119,6 +130,7 @@ public class AddEvent extends AppCompatActivity {
                         return;
                     }
 
+                    // אני מייצר רשימה חדשה שמוציאה אותי (המשתמש המחובר) כדי שלא אזמין את עצמי
                     List<User> otherUsers = new ArrayList<>();
                     String currentUserId = mAuth.getCurrentUser().getUid();
                     for (User u : users) {
@@ -127,14 +139,17 @@ public class AddEvent extends AppCompatActivity {
                         }
                     }
 
+                    // הכנת המערכים הדרושים לחלונית הבחירה (שמות + מי סומן ומי לא)
                     String[] userNames = new String[otherUsers.size()];
                     boolean[] checkedItems = new boolean[otherUsers.size()];
 
                     for (int i = 0; i < otherUsers.size(); i++) {
                         userNames[i] = otherUsers.get(i).getFname() != null ? otherUsers.get(i).getFname() : "משתמש";
+                        // מסמן מראש אנשים שכבר נבחרו בלחיצה קודמת
                         checkedItems[i] = selectedParticipantIds.contains(otherUsers.get(i).getId());
                     }
 
+                    // יצירת והצגת הדיאלוג עם תיבות הסימון
                     new AlertDialog.Builder(AddEvent.this)
                             .setTitle("בחר משתתפים להזמנה")
                             .setMultiChoiceItems(userNames, checkedItems, (dialog, which, isChecked) -> {
@@ -146,6 +161,7 @@ public class AddEvent extends AppCompatActivity {
                                 }
                             })
                             .setPositiveButton("אישור", (dialog, which) -> {
+                                // כשהמשתמש מאשר, אני מעדכן את הטקסט במסך שיציג כמה אנשים הוזמנו
                                 tvParticipantsList.setText("נבחרו " + selectedParticipantIds.size() + " מוזמנים");
                             })
                             .setNegativeButton("ביטול", null)
@@ -160,24 +176,29 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
+    // הפונקציה הזו מטפלת במצב שבו הגענו למסך הזה מלחיצה על "תבנית" (כמו קפה זריז במסך הבית)
     private void handleTemplateData() {
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("TEMPLATE_TITLE")) {
             String title = intent.getStringExtra("TEMPLATE_TITLE");
             int durationMinutes = intent.getIntExtra("TEMPLATE_DURATION", 0);
 
+            // ממלא את הכותרת אוטומטית
             etTitle.setText(title);
 
+            // ממלא את הזמנים אוטומטית בהתאם לאורך התבנית
             if (durationMinutes > 0) {
                 selectedDate = Calendar.getInstance();
                 SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                 etDatePicker.setText(sdfDate.format(selectedDate.getTime()));
 
+                // הפגישה תתחיל בעוד 5 דקות מעכשיו (כברירת מחדל)
                 Calendar startCal = Calendar.getInstance();
                 startCal.add(Calendar.MINUTE, 5);
                 SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm", Locale.getDefault());
                 etStartTime.setText(sdfTime.format(startCal.getTime()));
 
+                // מוסיף את אורך הפגישה לשעת ההתחלה כדי לחשב שעת סיום
                 Calendar endCal = (Calendar) startCal.clone();
                 endCal.add(Calendar.MINUTE, durationMinutes);
                 etEndTime.setText(sdfTime.format(endCal.getTime()));
@@ -185,13 +206,16 @@ public class AddEvent extends AppCompatActivity {
         }
     }
 
+    // פונקציה שמאזינה לבחירת סוג הפגישה (פיזית/אונליין)
     private void setupRadioGroupListener() {
         radioGroupType.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rb_online) {
+                // אם בחר אונליין - ממלאים אוטומטית וחוסמים את כתיבת המיקום
                 etLocation.setText("Online");
                 etLocation.setEnabled(false);
                 etLocation.setError(null);
             } else {
+                // אם בחר פיזי - מרוקנים ופותחים את שדה המיקום לכתיבה
                 if (etLocation.getText().toString().equals("Online")) {
                     etLocation.setText("");
                 }
@@ -200,8 +224,11 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
+    // פונקציה שמגדירה את הפופ-אפים של בחירת תאריך ושעות (Material Design)
     private void setupPickers() {
+        // בחירת תאריך
         etDatePicker.setOnClickListener(v -> {
+            // הגבלתי כאן את התאריכים כך שאי אפשר יהיה לקבוע פגישה ביום שכבר עבר (PointForward.now)
             CalendarConstraints.Builder constraintsBuilder = new CalendarConstraints.Builder()
                     .setValidator(DateValidatorPointForward.now());
 
@@ -219,6 +246,7 @@ public class AddEvent extends AppCompatActivity {
             });
         });
 
+        // בחירת שעת התחלה
         etStartTime.setOnClickListener(v -> {
             MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
@@ -229,6 +257,7 @@ public class AddEvent extends AppCompatActivity {
             });
         });
 
+        // בחירת שעת סיום
         etEndTime.setOnClickListener(v -> {
             MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
@@ -240,6 +269,7 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
+    // הניווט הכללי של האפליקציה בתפריט התחתון
     private void setupBottomNavigation() {
         navUpcoming.setOnClickListener(v -> {
             Intent intent = new Intent(this, HomePage.class);
@@ -270,7 +300,9 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
+    // זו הפונקציה המרכזית שרצה כשלוחצים "שמור". היא עושה ולידציות (בדיקות) ושומרת במסד הנתונים
     private void createEvent() {
+        // אני שואב את כל מה שהמשתמש הקליד
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String date = etDatePicker.getText().toString().trim();
@@ -278,29 +310,34 @@ public class AddEvent extends AppCompatActivity {
         String endTime = etEndTime.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
 
+        // בדיקה 1: האם שמו כותרת?
         if (TextUtils.isEmpty(title)) {
             etTitle.setError("חובה להזין כותרת לפגישה");
             etTitle.requestFocus();
             return;
         }
 
+        // בדיקה 2: האם בחרו סוג פגישה (פיזית/אונליין)?
         int selectedId = radioGroupType.getCheckedRadioButtonId();
         if (selectedId == -1) {
             Toast.makeText(this, "אנא בחר סוג פגישה", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // בדיקה 3: אם הפגישה פיזית - האם הזינו מיקום?
         if (selectedId == R.id.rb_physical && TextUtils.isEmpty(location)) {
             etLocation.setError("חובה להזין מיקום עבור פגישה פיזית");
             etLocation.requestFocus();
             return;
         }
 
+        // בדיקה 4: האם הזינו את כל הזמנים?
         if (TextUtils.isEmpty(date) || TextUtils.isEmpty(startTime) || TextUtils.isEmpty(endTime)) {
             Toast.makeText(this, "חובה לבחור תאריך, שעת התחלה ושעת סיום", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // בדיקה 5: האם הזמינו לפחות מישהו אחד לפגישה?
         if (selectedParticipantIds.isEmpty()) {
             Toast.makeText(this, "חובה להזמין לפחות משתתף אחד", Toast.LENGTH_LONG).show();
             return;
@@ -312,17 +349,20 @@ public class AddEvent extends AppCompatActivity {
         double calculatedHours = 0;
         long meetingStartTimeMillis = 0;
 
+        // שלב בדיקות הזמנים הלוגיות (זמן תקין)
         try {
             SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
             Date currentDateTime = new Date();
             Date fullStartObj = sdfFull.parse(date + " " + startTime);
             Date fullEndObj = sdfFull.parse(date + " " + endTime);
 
+            // מוודא שלא מנסים לקבוע פגישה להיום בשעה שכבר עברה
             if (fullStartObj != null && fullStartObj.before(currentDateTime)) {
                 Toast.makeText(this, "לא ניתן לקבוע פגישה לשעה שכבר עברה היום", Toast.LENGTH_LONG).show();
                 return;
             }
 
+            // מוודא ששעת הסיום הגיונית ומאוחרת משעת ההתחלה
             if (fullStartObj != null && fullEndObj != null && !fullEndObj.after(fullStartObj)) {
                 Toast.makeText(this, "שעת הסיום חייבת להיות מאוחרת משעת ההתחלה", Toast.LENGTH_LONG).show();
                 return;
@@ -332,6 +372,7 @@ public class AddEvent extends AppCompatActivity {
                 meetingStartTimeMillis = fullStartObj.getTime();
             }
 
+            // פה אני מחשב את משך הפגישה בשעות (יכול להיות מספר עשרוני)
             long diffInMillis = fullEndObj.getTime() - fullStartObj.getTime();
             calculatedHours = diffInMillis / (1000.0 * 60 * 60);
             calculatedHours = Math.round(calculatedHours * 100.0) / 100.0;
@@ -350,24 +391,27 @@ public class AddEvent extends AppCompatActivity {
         String dateTime = date + " " + startTime;
 
         // התיקון הקריטי: אנחנו משאירים את ה-ID ריק ("").
-        // פונקציית saveEvent של ה-DatabaseService תייצר לו ID אוטומטית!
+        // פונקציית saveEvent של ה-DatabaseService תייצר לו ID אוטומטית בפיירבייס!
         Event event = new Event(
                 "", title, description, dateTime, type, location, calculatedHours, admin
         );
 
+        // מוודא שאני לא בטעות ברשימת ה"מוזמנים" ומכניס את כל מי שבחרתי
         if (selectedParticipantIds.contains(uid)) selectedParticipantIds.remove(uid);
         event.setInvitedParticipantIds(selectedParticipantIds);
 
+        // אני אוטומטית נכנס לרשימת המשתתפים ש"אישרו" (כי אני יצרתי את הפגישה)
         List<String> acceptedList = new ArrayList<>();
         acceptedList.add(uid);
         event.setParticipantIds(acceptedList);
 
         final long finalMeetingStartTime = meetingStartTimeMillis;
 
-        // התיקון השני: שימוש ב-saveEvent הרשמי
+        // התיקון השני: שימוש ב-saveEvent הרשמי לשמירה בשרת
         databaseService.saveEvent(event, new DatabaseService.DatabaseCallback<Void>() {
             @Override
             public void onCompleted(Void object) {
+                // אם השמירה עברה בהצלחה - אני מתזמן את ההתראה וסוגר את המסך
                 scheduleNotification(event, finalMeetingStartTime);
                 Toast.makeText(AddEvent.this, "הפגישה נוצרה וההזמנות נשלחו", Toast.LENGTH_SHORT).show();
                 finish();
@@ -380,13 +424,17 @@ public class AddEvent extends AppCompatActivity {
         });
     }
 
+    // פונקציה שמפעילה את שעון המערכת כדי להקפיץ "פוש" למכשיר
     private void scheduleNotification(Event event, long meetingTimeInMillis) {
+        // מחשב בדיוק 15 דקות לפני הפגישה כדי להקפיץ את ההתראה
         long alarmTime = meetingTimeInMillis - (15 * 60 * 1000);
 
+        // אם זמן ההתראה כבר עבר (למשל פגישה לעוד 5 דקות), אין טעם לתזמן
         if (alarmTime < System.currentTimeMillis()) {
             return;
         }
 
+        // שימוש ב-AlarmManager של אנדרואיד כדי להפעיל את ה-BroadcastReceiver שיצרתי
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, MeetingReminderReceiver.class);
         intent.putExtra("EVENT_TITLE", event.getTitle());
@@ -399,6 +447,7 @@ public class AddEvent extends AppCompatActivity {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        // הגדרה שתעבוד תקין גם בגרסאות אנדרואיד חדשות (דורש אישור לתזמון מדויק)
         if (alarmManager != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {

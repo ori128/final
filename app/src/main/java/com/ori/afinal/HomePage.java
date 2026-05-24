@@ -36,6 +36,7 @@ public class HomePage extends AppCompatActivity {
 
     private static final String TAG = "HomePage";
 
+    // כאן אני מגדיר את כל המשתנים של התצוגה (UI) כדי שאוכל לעבוד איתם בקוד
     private TextView tvGreeting, tvDate, tvDay;
     private TextView tvStatsCount, tvStatsDuration, tvNotificationBadgeCount;
     private TextView tvListHeader, tvEmptyText;
@@ -43,41 +44,48 @@ public class HomePage extends AppCompatActivity {
     private RecyclerView rvEvents, rvTemplates;
     private SearchView svEvents;
 
-    // הוספנו את כפתור האדמין
+    // כפתורי הניווט והפעולות במסך
     private View btnProfile, btnLogout, btnAdmin;
     private ImageButton navUpcoming, navHistory, navProgress, navNotifications, navAdd;
 
+    // משתנים עבור מדדי ההתקדמות (Progress) והפגישה הנוכחית (Live)
     private CircularProgressIndicator progressMeetings, progressHours;
     private View cvLiveMeeting;
     private TextView tvLiveTitle, tvLiveTime;
     private View llEmptyState;
 
+    // אובייקטים לניהול המידע והתקשורת מול מסד הנתונים
     private EventAdapter eventAdapter;
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
     private String currentUserId;
 
+    // רשימה שתשמור את כל הפגישות כדי שאוכל לסנן אותן אחר כך
     private List<Event> fullEventsList = new ArrayList<>();
     private boolean isShowingHistory = false;
 
+    // יעדים שהגדרתי למשתמש עבור ה-Progress Bars
     private final int GOAL_MEETINGS = 5;
     private final double GOAL_HOURS = 10.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+        EdgeToEdge  .enable(this);
         setContentView(R.layout.activity_home_page);
 
+        // סידור שוליים כדי שהאפליקציה תיראה טוב על כל המסך (Edge to Edge)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        // אתחול החיבור ל-Firebase ולשירות מסד הנתונים שבניתי
         databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        // אני בודק אם יש משתמש מחובר. אם כן, אני שומר את ה-ID שלו. אם לא, אני סוגר את המסך.
         if (mAuth.getCurrentUser() != null) {
             currentUserId = mAuth.getCurrentUser().getUid();
         } else {
@@ -85,6 +93,7 @@ public class HomePage extends AppCompatActivity {
             return;
         }
 
+        // קורא לפונקציות שמסדרות את כל המסך ומושכות נתונים
         initViews();
         setupDateTime();
         setupBottomNavigation();
@@ -94,13 +103,14 @@ public class HomePage extends AppCompatActivity {
         loadNotificationsCount();
     }
 
+    // פונקציה שמרכזת את כל הקישורים בין קובץ העיצוב (XML) לבין הקוד
     private void initViews() {
         tvGreeting = findViewById(R.id.tv_greeting);
         tvDate = findViewById(R.id.tv_date);
         tvDay = findViewById(R.id.tv_day);
         btnProfile = findViewById(R.id.btn_profile);
         btnLogout = findViewById(R.id.btn_logout);
-        btnAdmin = findViewById(R.id.btn_admin); // אתחול כפתור המנהל
+        btnAdmin = findViewById(R.id.btn_admin);
 
         tvStatsCount = findViewById(R.id.tv_stats_count);
         tvStatsDuration = findViewById(R.id.tv_stats_duration);
@@ -125,6 +135,7 @@ public class HomePage extends AppCompatActivity {
         tvLiveTime = findViewById(R.id.tv_live_time);
         llEmptyState = findViewById(R.id.ll_empty_state);
 
+        // הגדרת פונט לאנימציה (Lottie) של המצב הריק (כשאין פגישות)
         com.airbnb.lottie.LottieAnimationView lottieEmpty = findViewById(R.id.lottie_empty);
         if (lottieEmpty != null) {
             lottieEmpty.setFontAssetDelegate(new com.airbnb.lottie.FontAssetDelegate() {
@@ -137,6 +148,7 @@ public class HomePage extends AppCompatActivity {
 
         if (cvNotificationBadge != null) cvNotificationBadge.setVisibility(View.GONE);
 
+        // הגדרת ה-RecyclerView שמציג את רשימת הפגישות
         if (rvEvents != null) {
             rvEvents.setLayoutManager(new LinearLayoutManager(this));
             rvEvents.setNestedScrollingEnabled(false);
@@ -145,6 +157,7 @@ public class HomePage extends AppCompatActivity {
             rvEvents.setAdapter(eventAdapter);
         }
 
+        // הוספתי מאזין לשורת החיפוש כדי לסנן את הפגישות בזמן אמת כשמקלידים
         if (svEvents != null) {
             svEvents.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
@@ -157,6 +170,7 @@ public class HomePage extends AppCompatActivity {
             });
         }
 
+        // הגדרת כפתורי הפעולות העליונים
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
@@ -167,7 +181,7 @@ public class HomePage extends AppCompatActivity {
             });
         }
 
-        // לחיצה על כפתור האדמין מעבירה לעמוד הניהול המיוחד שבנינו
+        // כפתור מנהל - יוצג רק למי שיש הרשאה, בלחיצה מעביר לעמוד הניהול שבניתי
         if (btnAdmin != null) {
             btnAdmin.setOnClickListener(v -> {
                 Intent intent = new Intent(HomePage.this, AdminActivity.class);
@@ -176,6 +190,7 @@ public class HomePage extends AppCompatActivity {
         }
     }
 
+    // פונקציה קטנה שמציגה את התאריך והיום הנוכחיים בראש המסך
     private void setupDateTime() {
         SimpleDateFormat sdfDay = new SimpleDateFormat("EEEE", new Locale("he", "IL"));
         SimpleDateFormat sdfDate = new SimpleDateFormat("d MMMM", new Locale("he", "IL"));
@@ -183,6 +198,7 @@ public class HomePage extends AppCompatActivity {
         if (tvDate != null) tvDate.setText(sdfDate.format(new Date()));
     }
 
+    // הגדרת התפריט התחתון (Bottom Navigation) ומעבר בין המסכים
     private void setupBottomNavigation() {
         navUpcoming.setOnClickListener(v -> {
             String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
@@ -204,12 +220,14 @@ public class HomePage extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // כפתור הוספת פגישה חדשה
         navAdd.setOnClickListener(v -> {
             Intent intent = new Intent(HomePage.this, AddEvent.class);
             startActivity(intent);
         });
     }
 
+    // יצרתי רשימה של תבניות פגישה מוכנות מראש (כמו קפה זריז) כדי לחסוך זמן למשתמש
     private void loadTemplates() {
         List<MeetingTemplate> templates = new ArrayList<>();
         templates.add(new MeetingTemplate("קפה זריז ☕", 15, "15 דקות"));
@@ -217,6 +235,7 @@ public class HomePage extends AppCompatActivity {
         templates.add(new MeetingTemplate("סיעור מוחות 💡", 45, "45 דקות"));
         templates.add(new MeetingTemplate("ארוחת צהריים 🍔", 60, "שעה"));
 
+        // כשהמשתמש לוחץ על תבנית, אני שולח אותו לעמוד הוספת פגישה עם הנתונים כבר מלאים
         TemplateAdapter templateAdapter = new TemplateAdapter(templates, template -> {
             Intent intent = new Intent(HomePage.this, AddEvent.class);
             intent.putExtra("TEMPLATE_TITLE", template.getTitle());
@@ -226,6 +245,7 @@ public class HomePage extends AppCompatActivity {
         rvTemplates.setAdapter(templateAdapter);
     }
 
+    // הלוגיקה של הסינון: בודקת אם להציג פגישות עבר/עתיד ואם הטקסט תואם לחיפוש
     private void filterEvents(String text) {
         if (fullEventsList == null || fullEventsList.isEmpty()) {
             rvEvents.setVisibility(View.GONE);
@@ -238,21 +258,25 @@ public class HomePage extends AppCompatActivity {
         SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
         List<Event> filteredList = new ArrayList<>();
 
+        // אני רץ על כל הפגישות כדי לבדוק מי מתאימה לסינון
         for (Event event : fullEventsList) {
             boolean isPastEvent = false;
             try {
                 if (event.getDateTime() != null) {
                     Date startDate = sdfFull.parse(event.getDateTime());
                     if (startDate != null) {
+                        // חישוב מתי הפגישה מסתיימת כדי לדעת אם היא נחשבת "פגישת עבר"
                         long endMillis = startDate.getTime() + (long) (event.getParticipationHours() * 60 * 60 * 1000);
                         if (currentTime > endMillis) isPastEvent = true;
                     }
                 }
             } catch (Exception e) { e.printStackTrace(); }
 
+            // דילוג על פגישות לא רלוונטיות (למשל, מציג עתיד אבל הפגישה בעבר)
             if (isShowingHistory && !isPastEvent) continue;
             if (!isShowingHistory && isPastEvent) continue;
 
+            // בדיקה אם טקסט החיפוש נמצא בכותרת או במיקום הפגישה
             boolean isMatch = text.isEmpty();
             if (!isMatch) {
                 if (event.getTitle() != null && event.getTitle().toLowerCase().contains(text.toLowerCase())) isMatch = true;
@@ -261,6 +285,7 @@ public class HomePage extends AppCompatActivity {
             if (isMatch) filteredList.add(event);
         }
 
+        // עדכון התצוגה - אם אין פגישות נציג אנימציה (Empty State), אחרת נציג את הרשימה
         if (filteredList.isEmpty()) {
             rvEvents.setVisibility(View.GONE);
             llEmptyState.setVisibility(View.VISIBLE);
@@ -271,6 +296,7 @@ public class HomePage extends AppCompatActivity {
         if (eventAdapter != null) eventAdapter.setEvents(filteredList);
     }
 
+    // יצרתי דיאלוג התנתקות כדי לוודא שהמשתמש לא יתנתק בטעות בלחיצה שגויה
     private void showLogoutDialog() {
         if (isFinishing() || isDestroyed()) return;
         new androidx.appcompat.app.AlertDialog.Builder(this)
@@ -285,6 +311,7 @@ public class HomePage extends AppCompatActivity {
                 }).setNegativeButton("ביטול", null).show();
     }
 
+    // פונקציה ששואבת את פרטי המשתמש מהפיירבייס, מציגה את שמו ובודקת אם הוא מנהל
     private void loadUserData() {
         databaseService.getUser(currentUserId, new DatabaseService.DatabaseCallback<User>() {
             @Override
@@ -295,8 +322,7 @@ public class HomePage extends AppCompatActivity {
                         tvGreeting.setText("היי, " + user.getFname());
                     }
 
-                    // --- כאן נמצא "הקסם" של המנהלים ---
-                    // אם המשתמש הוא מנהל (הערך admin הוא true), נציג לו את כפתור הכתר
+                    // הלוגיקה של המנהלים - אם משתנה ה-admin קיים ומוגדר כ-true, הוא יראה את הכפתור
                     if (btnAdmin != null) {
                         if (Boolean.TRUE.equals(user.getAdmin())) {
                             btnAdmin.setVisibility(View.VISIBLE);
@@ -311,6 +337,7 @@ public class HomePage extends AppCompatActivity {
         });
     }
 
+    // פונקציה מרכזית שמושכת את הפגישות של המשתמש מהמסד
     private void loadEventsData() {
         databaseService.getUserEvents(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
@@ -327,6 +354,7 @@ public class HomePage extends AppCompatActivity {
                     Event liveEvent = null;
                     long liveEventEndTimeMillis = 0;
 
+                    // מעבר על כל הפגישות כדי לחשב נתונים לסטטיסטיקה ולמצוא פגישה פעילה (Live)
                     for (Event event : events) {
                         fullEventsList.add(event);
                         try {
@@ -335,10 +363,14 @@ public class HomePage extends AppCompatActivity {
                                 if (startDate != null) {
                                     long startMillis = startDate.getTime();
                                     long endMillis = startMillis + (long) (event.getParticipationHours() * 60 * 60 * 1000);
+
+                                    // מזהה אם יש עכשיו פגישה שמתרחשת באותו הרגע
                                     if (liveEvent == null && currentTime >= startMillis && currentTime <= endMillis) {
                                         liveEvent = event;
                                         liveEventEndTimeMillis = endMillis;
                                     }
+
+                                    // חישוב סך שעות הפגישות שהמשתמש קבע
                                     if (currentTime >= startMillis) totalDuration += event.getParticipationHours();
                                     if (currentTime > endMillis) completedMeetingsCount++;
                                 }
@@ -346,6 +378,7 @@ public class HomePage extends AppCompatActivity {
                         } catch (Exception e) { e.printStackTrace(); }
                     }
 
+                    // אם יש פגישה פעילה עכשיו, אני מציג את החלונית שלה למעלה
                     if (liveEvent != null) {
                         cvLiveMeeting.setVisibility(View.VISIBLE);
                         tvLiveTitle.setText(liveEvent.getTitle());
@@ -353,12 +386,13 @@ public class HomePage extends AppCompatActivity {
                     } else {
                         cvLiveMeeting.setVisibility(View.GONE);
                     }
-                    // שורת עדכון הנקודות הוסרה מכאן
                 }
 
+                // מפעיל את הסינון כדי להציג את הרשימה המעודכנת
                 String currentQuery = svEvents != null ? svEvents.getQuery().toString() : "";
                 filterEvents(currentQuery);
 
+                // מעדכן את המספרים בסטטיסטיקות (כמה פגישות וכמה שעות)
                 if (tvStatsCount != null) tvStatsCount.setText(String.valueOf(fullEventsList.size()));
                 if (tvStatsDuration != null) {
                     String durationText = (totalDuration == (long) totalDuration) ?
@@ -367,10 +401,12 @@ public class HomePage extends AppCompatActivity {
                     tvStatsDuration.setText(durationText);
                 }
 
+                // חישוב האחוזים בשביל ה-Progress Bars העגולים
                 int currentMeetingsCount = fullEventsList.size();
                 int meetingsProgressPercentage = (int) Math.min(((double) currentMeetingsCount / GOAL_MEETINGS) * 100, 100);
                 int hoursProgressPercentage = (int) Math.min((totalDuration / GOAL_HOURS) * 100, 100);
 
+                // עדכון התצוגה של המדדים בצורה תואמת גרסאות
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     if (progressMeetings != null) progressMeetings.setProgress(meetingsProgressPercentage, true);
                     if (progressHours != null) progressHours.setProgress(hoursProgressPercentage, true);
@@ -384,6 +420,7 @@ public class HomePage extends AppCompatActivity {
         });
     }
 
+    // פונקציה שבודקת אם יש למשתמש התראות שממתינות, ואם כן מציגה בועה אדומה עם המספר
     private void loadNotificationsCount() {
         databaseService.getUserNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
@@ -403,6 +440,7 @@ public class HomePage extends AppCompatActivity {
         });
     }
 
+    // כשהמסך חוזר לפוקוס (למשל אחרי שחזרנו מעמוד אחר), אני מרענן את כל הנתונים
     @Override
     protected void onResume() {
         super.onResume();

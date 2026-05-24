@@ -24,11 +24,13 @@ import com.ori.afinal.model.User;
 
 public class RegisterUser extends AppCompatActivity {
 
+    // כאן אני מגדיר את כל השדות שהמשתמש צריך למלא כדי להירשם
     private EditText etFname, etLname, etPhone, etEmail, etPassword;
     private Button btnRegister;
     private TextView tvLogin;
     private ImageButton btnBackMain;
 
+    // אובייקטים לשמירת המידע בשרת ולאימות (הרשמה מול פיירבייס)
     private DatabaseService databaseService;
     private FirebaseAuth mAuth; // הוספנו את מערכת ההזדהות של פיירבייס
 
@@ -38,12 +40,14 @@ public class RegisterUser extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register_user);
 
+        // סידור השוליים של המסך
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        // אתחול החיבורים לפיירבייס וקריאה לפונקציית הגדרת המסך
         databaseService = DatabaseService.getInstance();
         mAuth = FirebaseAuth.getInstance(); // אתחול מערכת ההזדהות
         initViews();
@@ -59,8 +63,10 @@ public class RegisterUser extends AppCompatActivity {
         tvLogin = findViewById(R.id.tv_login);
         btnBackMain = findViewById(R.id.btn_back_main);
 
+        // לחיצה על הרשמה מפעילה את הפונקציה המרכזית של המסך
         btnRegister.setOnClickListener(v -> registerUser());
 
+        // אם המשתמש נזכר שכבר יש לו חשבון, הוא עובר לעמוד ההתחברות
         tvLogin.setOnClickListener(v -> {
             Intent intent = new Intent(RegisterUser.this, Login.class);
             startActivity(intent);
@@ -72,74 +78,79 @@ public class RegisterUser extends AppCompatActivity {
         });
     }
 
+    // הפונקציה שבודקת את הנתונים ויוצרת את המשתמש
     private void registerUser() {
+        // אני שואב את כל מה שהמשתמש הקליד ומוריד רווחים מיותרים עם trim()
         String fname = etFname.getText().toString().trim();
         String lname = etLname.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // 1. בדיקה שכל השדות מלאים
+        // 1. בדיקה (ולידציה) שכל השדות באמת מלאים ולא הושארו ריקים
         if (TextUtils.isEmpty(fname) || TextUtils.isEmpty(lname) ||
                 TextUtils.isEmpty(phone) || TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
             Toast.makeText(this, "אנא מלא את כל השדות", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 2. בדיקת תקינות כתובת אימייל
+        // 2. בדיקת תקינות כתובת אימייל (שהיא באמת בפורמט של אימייל, עם @ וכו')
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etEmail.setError("כתובת אימייל לא תקינה");
-            etEmail.requestFocus();
+            etEmail.requestFocus(); // מקפיץ את הסמן חזרה לשדה האימייל
             return;
         }
 
-        // 3. בדיקת אורך סיסמה (Firebase דורש לפחות 6 תווים)
+        // 3. בדיקת אורך סיסמה (מערכת Firebase דורשת מינימום 6 תווים, אז אני חוסם את זה מראש)
         if (password.length() < 6) {
             etPassword.setError("הסיסמה חייבת להכיל לפחות 6 תווים");
             etPassword.requestFocus();
             return;
         }
 
-        // 4. בדיקת תקינות מספר טלפון (בישראל זה 10 ספרות, או 9 נייח)
+        // 4. בדיקת תקינות מספר טלפון (בישראל זה 10 ספרות, או 9 בטלפון נייח)
         if (phone.length() < 9 || phone.length() > 10 || !phone.matches("[0-9]+")) {
             etPhone.setError("מספר טלפון לא תקין");
             etPhone.requestFocus();
             return;
         }
 
-        // השבתת הכפתור כדי למנוע לחיצות כפולות
+        // השבתת הכפתור כדי למנוע לחיצות כפולות שעלולות לייצר שתי קריאות לשרת
         btnRegister.setEnabled(false);
 
-        // 5. יצירת המשתמש ב-Firebase Auth קודם כל!
+        // 5. זה השלב הקריטי: קודם כל אני יוצר את המשתמש ב-Firebase Auth (מערכת האימות)
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // המשתמש נוצר בהצלחה במערכת ההזדהות, נשלוף את ה-ID שלו
+                        // המשתמש נוצר בהצלחה במערכת ההזדהות. עכשיו אשלוף את ה-ID הייחודי שפיירבייס נתן לו
                         FirebaseUser firebaseUser = mAuth.getCurrentUser();
                         if (firebaseUser != null) {
                             String uid = firebaseUser.getUid();
 
-                            // ניצור את אובייקט המשתמש עם כל הפרטים למסד הנתונים
+                            // אני יוצר אובייקט מסוג User (מודל שבניתי) שמכיל את כל הפרטים הנוספים שלו
+                            // פרמטר ה-false בסוף אומר שכברירת מחדל, משתמש חדש הוא לא Admin.
                             User user = new User(uid, fname, lname, phone, email, password, false);
 
-                            // שומרים את הנתונים ב-Realtime Database
+                            // שלב אחרון: שומרים את האובייקט המלא במסד הנתונים שלי (Realtime Database)
                             databaseService.saveUser(user, new DatabaseService.DatabaseCallback<Void>() {
                                 @Override
                                 public void onCompleted(Void object) {
                                     Toast.makeText(RegisterUser.this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
+                                    // אחרי שהכל נשמר, אני מעביר אותו ישר למסך הבית!
                                     startActivity(new Intent(RegisterUser.this, HomePage.class));
                                     finish();
                                 }
 
                                 @Override
                                 public void onFailed(Exception e) {
+                                    // אם השמירה למסד הנתונים נכשלה מאיזושהי סיבה, אשחרר את הכפתור ואציג שגיאה
                                     btnRegister.setEnabled(true);
                                     Toast.makeText(RegisterUser.this, "שגיאה בשמירת נתונים: " + e.getMessage(), Toast.LENGTH_LONG).show();
                                 }
                             });
                         }
                     } else {
-                        // במקרה שהאימייל תפוס או שגיאה אחרת
+                        // אם יצירת היוזר ב-Auth נכשלה (למשל, האימייל כבר רשום במערכת)
                         btnRegister.setEnabled(true);
                         Toast.makeText(RegisterUser.this, "שגיאה בהרשמה: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }

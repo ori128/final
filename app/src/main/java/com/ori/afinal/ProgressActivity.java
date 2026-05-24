@@ -41,24 +41,31 @@ public class ProgressActivity extends AppCompatActivity {
 
     private static final String TAG = "ProgressActivity";
 
+    // משתנים עבור הכרטיסיות העליונות (טאבים) - מעבר בין מסך הסטטיסטיקות ליומן ולפעילות
     private MaterialCardView btnTabStats, btnTabHistory;
     private TextView tvTabStats, tvTabHistory;
     private View scrollStats, llHistoryContainer;
 
+    // רכיבי התצוגה של ההתקדמות - עיגול ההתקדמות המרכזי והטקסט בתוכו
     private CircularProgressIndicator progressMain;
     private TextView tvProgressPercent;
+
+    // שדות הטקסט שמציגים את המספרים בסטטיסטיקות (פגישות שהושלמו, שעות, תאריך הצטרפות)
     private TextView tvStatCompleted, tvStatRegistration, tvStatLastDate, tvStatHours;
 
+    // לוח השנה ורשימת ההיסטוריה האחרונה
     private CalendarView calendarView;
     private RecyclerView rvRecentHistory;
     private View llEmptyHistory;
     private TextView tvSeeAllHistory;
     private EventAdapter recentAdapter;
 
+    // ניווט תחתון והתראות
     private ImageButton navHome, navHistory, navProgress, navNotifications, navAdd;
     private View cvNotificationBadge;
     private TextView tvNotificationBadgeCount;
 
+    // התחברות לשרת ושמירת ה-ID של המשתמש
     private DatabaseService databaseService;
     private FirebaseAuth mAuth;
     private String currentUserId;
@@ -69,12 +76,14 @@ public class ProgressActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_progress);
 
+        // התאמת התצוגה למסך מלא (התחשבות בשורת המצב למעלה ובכפתורי הניווט למטה)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        // בדיקה שאכן יש משתמש מחובר, אחרת נזרוק אותו מהמסך הזה
         mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
             currentUserId = mAuth.getCurrentUser().getUid();
@@ -84,15 +93,18 @@ public class ProgressActivity extends AppCompatActivity {
             return;
         }
 
+        // הפעלת פונקציות האתחול של המסך
         initViews();
         setupTopToggle();
         setupBottomNavigation();
         loadStatisticsAndHistory();
         loadNotificationsCount();
 
+        // קריאה לנתוני החשבון (כמה ימים הוא פעיל באפליקציה)
         loadUserAccountStats();
     }
 
+    // פונקציה שמקשרת את המשתנים לאלמנטים ב-XML
     private void initViews() {
         btnTabStats = findViewById(R.id.btn_tab_stats);
         btnTabHistory = findViewById(R.id.btn_tab_history);
@@ -114,6 +126,7 @@ public class ProgressActivity extends AppCompatActivity {
         llEmptyHistory = findViewById(R.id.ll_empty_history);
         tvSeeAllHistory = findViewById(R.id.tv_see_all_history);
 
+        // הגדרת פונט לאנימציית המצב הריק (Lottie)
         com.airbnb.lottie.LottieAnimationView lottieEmpty = findViewById(R.id.lottie_empty_history);
         if (lottieEmpty != null) {
             lottieEmpty.setFontAssetDelegate(new com.airbnb.lottie.FontAssetDelegate() {
@@ -124,11 +137,13 @@ public class ProgressActivity extends AppCompatActivity {
             });
         }
 
+        // הגדרת הרשימה שמציגה היסטוריה
         rvRecentHistory.setLayoutManager(new LinearLayoutManager(this));
         recentAdapter = new EventAdapter();
         recentAdapter.setCurrentUserId(currentUserId);
         rvRecentHistory.setAdapter(recentAdapter);
 
+        // כפתור מעבר למסך ההיסטוריה המלא
         tvSeeAllHistory.setOnClickListener(v -> {
             Intent intent = new Intent(this, HistoryActivity.class);
             startActivity(intent);
@@ -143,27 +158,33 @@ public class ProgressActivity extends AppCompatActivity {
         tvNotificationBadgeCount = findViewById(R.id.tv_notification_badge_count);
     }
 
+    // פונקציה שאחראית על הלוגיקה של הכפתורים העליונים - מעבר בין "סטטיסטיקה" ל"יומן ופעילות"
     private void setupTopToggle() {
+        // כשהמשתמש לוחץ על טאב הסטטיסטיקה:
         btnTabStats.setOnClickListener(v -> {
-            btnTabStats.setCardBackgroundColor(Color.parseColor("#3B82F6"));
-            tvTabStats.setTextColor(Color.parseColor("#FFFFFF"));
-            btnTabHistory.setCardBackgroundColor(Color.parseColor("#00000000"));
+            btnTabStats.setCardBackgroundColor(Color.parseColor("#3B82F6")); // צובע את הכפתור בכחול
+            tvTabStats.setTextColor(Color.parseColor("#FFFFFF")); // טקסט לבן
+            btnTabHistory.setCardBackgroundColor(Color.parseColor("#00000000")); // הופך את הכפתור השני לשקוף
             tvTabHistory.setTextColor(Color.parseColor("#6B7280"));
-            scrollStats.setVisibility(View.VISIBLE);
-            llHistoryContainer.setVisibility(View.GONE);
-            loadUserAccountStats();
+
+            scrollStats.setVisibility(View.VISIBLE); // מראה את הסטטיסטיקות
+            llHistoryContainer.setVisibility(View.GONE); // מסתיר את היומן
+            loadUserAccountStats(); // מפעיל מחדש את האנימציה המגניבה של העיגול!
         });
 
+        // כשהמשתמש לוחץ על טאב היומן והפעילות:
         btnTabHistory.setOnClickListener(v -> {
             btnTabHistory.setCardBackgroundColor(Color.parseColor("#3B82F6"));
             tvTabHistory.setTextColor(Color.parseColor("#FFFFFF"));
             btnTabStats.setCardBackgroundColor(Color.parseColor("#00000000"));
             tvTabStats.setTextColor(Color.parseColor("#6B7280"));
-            llHistoryContainer.setVisibility(View.VISIBLE);
-            scrollStats.setVisibility(View.GONE);
+
+            llHistoryContainer.setVisibility(View.VISIBLE); // מראה את היומן
+            scrollStats.setVisibility(View.GONE); // מסתיר את הסטטיסטיקות
         });
     }
 
+    // ניווט תחתון
     private void setupBottomNavigation() {
         navHome.setOnClickListener(v -> {
             Intent intent = new Intent(this, HomePage.class);
@@ -189,36 +210,44 @@ public class ProgressActivity extends AppCompatActivity {
         });
     }
 
+    // פונקציה שמחשבת ממתי המשתמש רשום לאפליקציה וכמה ימים עברו מאז
     private void loadUserAccountStats() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null && user.getMetadata() != null) {
+            // לוקח מהפיירבייס את התאריך המדויק שבו החשבון נוצר
             long creationTimestamp = user.getMetadata().getCreationTimestamp();
 
+            // מפרמט את תאריך ההרשמה לטקסט קריא ומציג אותו
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             String registrationDateStr = sdf.format(new Date(creationTimestamp));
             if (tvStatRegistration != null) tvStatRegistration.setText(registrationDateStr);
 
+            // מחשב כמה ימים עברו מתאריך ההרשמה ועד עכשיו
             long currentTimestamp = System.currentTimeMillis();
             long diffInMillis = currentTimestamp - creationTimestamp;
             long daysActive = TimeUnit.MILLISECONDS.toDays(diffInMillis);
 
-            if (daysActive <= 0) daysActive = 1;
+            if (daysActive <= 0) daysActive = 1; // מינימום יום אחד
 
+            // מפעיל את האנימציה שרצה מ-0 ועד מספר הימים שהמשתמש פעיל
             animateDaysCounter(0, (int) daysActive);
         }
     }
 
+    // יצרתי אנימציה (ValueAnimator) שעושה אפקט ספירה יפהפה במסך עד למספר הימים הפעילים
     private void animateDaysCounter(int start, int end) {
         if (tvProgressPercent == null || progressMain == null) return;
         ValueAnimator animator = ValueAnimator.ofInt(start, end);
-        animator.setDuration(1500);
+        animator.setDuration(1500); // האנימציה תיקח שנייה וחצי
+
         animator.addUpdateListener(animation -> {
             int val = (int) animation.getAnimatedValue();
-            tvProgressPercent.setText(String.valueOf(val));
+            tvProgressPercent.setText(String.valueOf(val)); // מעדכן את הטקסט במספר הנוכחי באנימציה
 
+            // מעדכן את עיגול ההתקדמות (Progress Bar) בהתאם למספר (המקסימום פה מוגדר ל-100)
             int percent = Math.min((int) (((double) val / 100.0) * 100), 100);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                progressMain.setProgress(percent, true);
+                progressMain.setProgress(percent, true); // true בשביל תנועה חלקה
             } else {
                 progressMain.setProgress(percent);
             }
@@ -226,12 +255,14 @@ public class ProgressActivity extends AppCompatActivity {
         animator.start();
     }
 
+    // הפונקציה המרכזית שמושכת את הפגישות ומחשבת את הנתונים!
     private void loadStatisticsAndHistory() {
         databaseService.getUserEvents(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
             public void onCompleted(List<Event> events) {
                 if (isFinishing() || isDestroyed()) return;
 
+                // אם אין בכלל פגישות - נאפס את הנתונים ונציג מצב ריק
                 if (events == null || events.isEmpty()) {
                     tvStatCompleted.setText("0");
                     tvStatLastDate.setText("אין");
@@ -250,8 +281,9 @@ public class ProgressActivity extends AppCompatActivity {
                 SimpleDateFormat sdfDisplay = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
                 List<Event> pastEvents = new ArrayList<>();
-                List<EventDay> calendarEvents = new ArrayList<>();
+                List<EventDay> calendarEvents = new ArrayList<>(); // רשימה שתשמור את הנקודות הקטנות שעל לוח השנה
 
+                // אני עובר פגישה-פגישה ובודק מי כבר הסתיימה ומי לא
                 for (Event event : events) {
                     try {
                         if (event.getDateTime() != null) {
@@ -263,12 +295,15 @@ public class ProgressActivity extends AppCompatActivity {
                                 calendar.setTime(startDate);
                                 calendarEvents.add(new EventDay(calendar, R.drawable.calendar_dot));
 
-                                // חישוב סטטיסטיקות והיסטוריה רק לפגישות עבר
+                                // חישוב סטטיסטיקות והיסטוריה יתבצע *רק* לפגישות עבר
                                 long startMillis = startDate.getTime();
                                 long endMillis = startMillis + (long) (event.getParticipationHours() * 60 * 60 * 1000);
-                                if (currentTime > endMillis) {
-                                    completedMeetings++;
-                                    totalHours += event.getParticipationHours();
+
+                                if (currentTime > endMillis) { // הפגישה בעבר!
+                                    completedMeetings++; // סופר פגישה שהושלמה
+                                    totalHours += event.getParticipationHours(); // סוכם את השעות
+
+                                    // חיפוש הפגישה האחרונה ביותר שהייתה בעבר
                                     if (endMillis > maxPastMillis) maxPastMillis = endMillis;
                                     pastEvents.add(event);
                                 }
@@ -277,28 +312,38 @@ public class ProgressActivity extends AppCompatActivity {
                     } catch (Exception e) { e.printStackTrace(); }
                 }
 
+                // עדכון התצוגה של המספרים בחלק העליון של הסטטיסטיקות
                 tvStatCompleted.setText(String.valueOf(completedMeetings));
-                String hoursText = (totalHours == (long) totalHours) ? String.format(Locale.getDefault(), "%d", (long) totalHours) : String.format(Locale.getDefault(), "%.1f", totalHours);
+                String hoursText = (totalHours == (long) totalHours) ?
+                        String.format(Locale.getDefault(), "%d", (long) totalHours) :
+                        String.format(Locale.getDefault(), "%.1f", totalHours);
                 tvStatHours.setText(hoursText + "h");
+
                 if (maxPastMillis > 0) tvStatLastDate.setText(sdfDisplay.format(new Date(maxPastMillis)));
                 else tvStatLastDate.setText("אין");
 
+                // אני מעדכן את לוח השנה שיציג את כל הנקודות שחישבתי קודם
                 calendarView.setEvents(calendarEvents);
 
+                // טיפול בתצוגת היסטוריית הפגישות מתחת ללוח השנה (מראה עד 5 פגישות אחרונות)
                 if (pastEvents.isEmpty()) {
                     rvRecentHistory.setVisibility(View.GONE);
                     llEmptyHistory.setVisibility(View.VISIBLE);
                 } else {
                     rvRecentHistory.setVisibility(View.VISIBLE);
                     llEmptyHistory.setVisibility(View.GONE);
+
+                    // אני ממיין את פגישות העבר מהחדשה ביותר לישנה ביותר (לפי תאריך)
                     Collections.sort(pastEvents, (e1, e2) -> {
                         try {
                             Date d1 = sdfFull.parse(e1.getDateTime());
                             Date d2 = sdfFull.parse(e2.getDateTime());
-                            if (d1 != null && d2 != null) return d2.compareTo(d1);
+                            if (d1 != null && d2 != null) return d2.compareTo(d1); // מיון יורד
                         } catch (Exception e) { e.printStackTrace(); }
                         return 0;
                     });
+
+                    // חותך את הרשימה ומציג רק את 5 הפגישות האחרונות כדי לא להעמיס על המסך
                     List<Event> recent5 = pastEvents.size() > 5 ? pastEvents.subList(0, 5) : pastEvents;
                     recentAdapter.setEvents(recent5);
                 }
@@ -309,6 +354,7 @@ public class ProgressActivity extends AppCompatActivity {
         });
     }
 
+    // פונקציה קטנה שבודקת אם יש התראות פתוחות, ואם כן מעדכנת את העיגול האדום הקטן בתפריט
     private void loadNotificationsCount() {
         databaseService.getUserNotifications(currentUserId, new DatabaseService.DatabaseCallback<List<Event>>() {
             @Override
@@ -328,6 +374,7 @@ public class ProgressActivity extends AppCompatActivity {
         });
     }
 
+    // כשהמסך חוזר לפוקוס (למשל אם עברנו לדף אחר וחזרנו) אני מרענן את כל הנתונים
     @Override
     protected void onResume() {
         super.onResume();
